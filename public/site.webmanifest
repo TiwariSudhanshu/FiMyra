@@ -1,0 +1,88 @@
+{
+  "name": "FiMyra - Health & Nutrition Tracking",
+  "short_name": "FiMyra",
+  "description": "Track nutrients, understand your mood, and reach your health goals effortlessly with FiMyra.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["health", "fitness", "lifestyle", "productivity"],
+  "icons": [
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "375x667",
+      "type": "image/png",
+      "platform": "mobile",
+      "label": "FiMyra Mobile App"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "FiMyra Desktop App"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Track Food",
+      "short_name": "Track",
+      "description": "Quick access to food tracking",
+      "url": "/track",
+      "icons": [
+        {
+          "src": "/icon-track.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "View Aura Score",
+      "short_name": "Aura",
+      "description": "Check your health aura score",
+      "url": "/aura",
+      "icons": [
+        {
+          "src": "/icon-aura.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
+}
