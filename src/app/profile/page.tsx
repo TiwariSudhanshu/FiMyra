@@ -33,6 +33,7 @@ const ProfilePage: React.FC = () => {
   const [success, setSuccess] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>('');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -161,7 +162,8 @@ const ProfilePage: React.FC = () => {
       if (data.success) {
         setSuccess('Profile updated successfully!');
         setUser(data.user);
-        setTimeout(() => router.push('/dashboard'), 2000);
+        setIsEditModalOpen(false);
+        setTimeout(() => setSuccess(''), 3000);
       } else {
         setError(data.message || 'Failed to update profile');
       }
@@ -181,54 +183,227 @@ const ProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <Link href="/dashboard" className="text-2xl font-bold text-blue-400 hover:text-blue-300">
-            FiMyra
-          </Link>
-          <h1 className="mt-4 text-3xl font-bold text-white">Complete Your Health Profile</h1>
-          <p className="mt-2 text-gray-400">Help us personalize your FiMyra experience</p>
-        </div>
-
-        {/* Profile Form */}
-        <div className="bg-gray-800 rounded-lg shadow-xl p-8 border border-gray-700">
-          {error && (
-            <div className="mb-6 p-3 bg-red-900 border border-red-600 rounded-md text-red-200 text-sm">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-6 p-3 bg-green-900 border border-green-600 rounded-md text-green-200 text-sm">
-              {success}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Avatar Upload */}
-            <div className="text-center">
-              <div className="relative inline-block">
-                <img
-                  src={avatarPreview || user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name || 'User')}&background=3b82f6&color=fff&size=128`}
-                  alt="Profile Avatar"
-                  className="w-24 h-24 rounded-full border-4 border-blue-500 object-cover"
-                />
-                <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                  />
-                </label>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900">
+      {/* Background Effects */}
+      <div className="fixed inset-0 opacity-10 pointer-events-none">
+        <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
+      </div>
+      
+      {/* Header */}
+      <header className="relative z-10 bg-black/20 backdrop-blur-md shadow-2xl border-b border-white/10">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-blue-400 rounded-lg flex items-center justify-center">
+                <div className="w-5 h-5 bg-white rounded opacity-90"></div>
               </div>
-              <p className="mt-2 text-gray-400 text-sm">Click + to change avatar</p>
+              <Link href="/dashboard" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 hover:from-purple-300 hover:to-blue-300 transition-all">
+                FiMyra
+              </Link>
             </div>
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/dashboard"
+                className="text-white/90 hover:text-white transition-colors px-4 py-2 rounded-full border border-white/20 hover:border-white/40 backdrop-blur-sm font-medium"
+              >
+                Back to Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
+      
+      <div className="relative z-10 py-12 px-6">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-400/30 bg-purple-400/10 backdrop-blur-sm mb-6">
+              <div className="w-3 h-3 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full animate-pulse"></div>
+              <span className="text-purple-300 text-sm font-medium">Your Profile</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
+              Complete Your 
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">Health Profile</span>
+            </h1>
+            <p className="text-lg text-white/70 max-w-2xl mx-auto leading-relaxed">
+              Help us personalize your FiMyra experience with detailed health insights
+            </p>
+          </div>
+
+          {/* Profile Display/Form */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/10">
+            {error && (
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-400/30 rounded-xl text-red-300 text-sm backdrop-blur-sm">
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="mb-6 p-4 bg-green-500/10 border border-green-400/30 rounded-xl text-green-300 text-sm backdrop-blur-sm">
+                {success}
+              </div>
+            )}
+
+          {/* Profile Display */}
+          {!isEditModalOpen && (
+            <div className="space-y-8">
+              {/* Profile Header */}
+              <div className="flex flex-col md:flex-row items-center gap-6 p-6 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl border border-purple-400/20">
+                <img
+                  src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name || 'User')}&background=7c3aed&color=fff&size=120`}
+                  alt="Profile Avatar"
+                  className="w-24 h-24 rounded-full border-4 border-purple-400/50 object-cover"
+                />
+                <div className="text-center md:text-left flex-1">
+                  <h2 className="text-2xl font-bold text-white mb-2">{formData.name || 'Your Name'}</h2>
+                  <p className="text-white/70 mb-4">{user?.email}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {user?.profileCompleted ? (
+                      <span className="px-3 py-1 bg-green-500/20 border border-green-400/30 rounded-full text-green-300 text-sm">
+                        ✓ Profile Complete
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 bg-yellow-500/20 border border-yellow-400/30 rounded-full text-yellow-300 text-sm">
+                        Profile Incomplete
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white px-6 py-3 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg"
+                >
+                  Edit Profile
+                </button>
+              </div>
+
+              {/* Profile Details Grid */}
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Basic Info */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-4">Basic Information</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Age:</span>
+                      <span className="text-white">{formData.age || 'Not set'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Gender:</span>
+                      <span className="text-white capitalize">{formData.gender || 'Not set'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Height:</span>
+                      <span className="text-white">{formData.height ? `${formData.height} cm` : 'Not set'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Weight:</span>
+                      <span className="text-white">{formData.weight ? `${formData.weight} kg` : 'Not set'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Activity & Goals */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-4">Activity & Goals</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-white/60 block mb-1">Activity Level:</span>
+                      <span className="text-white capitalize">{formData.activityLevel?.replace('-', ' ') || 'Not set'}</span>
+                    </div>
+                    {formData.healthGoals.length > 0 && (
+                      <div>
+                        <span className="text-white/60 block mb-2">Health Goals:</span>
+                        <div className="flex flex-wrap gap-2">
+                          {formData.healthGoals.map((goal, index) => (
+                            <span key={index} className="px-2 py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs">
+                              {goal.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Dietary Preferences */}
+                {formData.dietaryPreferences.length > 0 && (
+                  <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                    <h3 className="text-lg font-semibold text-white mb-4">Dietary Preferences</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.dietaryPreferences.map((pref, index) => (
+                        <span key={index} className="px-3 py-1 bg-green-500/20 border border-green-400/30 rounded-full text-green-300 text-sm">
+                          {pref.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Health Notes */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-4">Health Notes</h3>
+                  <div className="space-y-2">
+                    {formData.medicalConditions.length > 0 ? (
+                      <div>
+                        <span className="text-white/60 text-sm">Medical Conditions:</span>
+                        <p className="text-white/80 text-sm">{formData.medicalConditions.join(', ')}</p>
+                      </div>
+                    ) : (
+                      <p className="text-white/60 text-sm">No medical conditions noted</p>
+                    )}
+                    {formData.allergies.length > 0 ? (
+                      <div>
+                        <span className="text-white/60 text-sm">Allergies:</span>
+                        <p className="text-white/80 text-sm">{formData.allergies.join(', ')}</p>
+                      </div>
+                    ) : (
+                      <p className="text-white/60 text-sm">No allergies noted</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Edit Modal */}
+          {isEditModalOpen && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-white">Edit Profile</h3>
+                <button
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="text-white/60 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Avatar Upload */}
+                <div className="text-center mb-6">
+                  <div className="relative inline-block">
+                    <img
+                      src={avatarPreview || user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name || 'User')}&background=7c3aed&color=fff&size=128`}
+                      alt="Profile Avatar"
+                      className="w-24 h-24 rounded-full border-4 border-purple-400/50 object-cover"
+                    />
+                    <label className="absolute bottom-0 right-0 bg-gradient-to-r from-purple-500 to-blue-600 text-white p-2 rounded-full cursor-pointer hover:from-purple-600 hover:to-blue-700 transition-all">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarChange}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  <p className="mt-2 text-white/60 text-sm">Click + to change avatar</p>
+                </div>
 
             {/* Basic Info */}
             <div className="grid md:grid-cols-2 gap-6">
@@ -282,7 +457,7 @@ const ProfilePage: React.FC = () => {
                   onChange={handleInputChange}
                   min="20"
                   max="500"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 placeholder-white/50 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 focus:bg-white/15 transition-all backdrop-blur-sm"
                 />
               </div>
 
@@ -292,7 +467,7 @@ const ProfilePage: React.FC = () => {
                   name="gender"
                   value={formData.gender}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 focus:bg-white/15 transition-all backdrop-blur-sm"
                 >
                   <option value="">Select Gender</option>
                   <option value="male">Male</option>
@@ -310,7 +485,7 @@ const ProfilePage: React.FC = () => {
                 name="activityLevel"
                 value={formData.activityLevel}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 focus:bg-white/15 transition-all backdrop-blur-sm"
               >
                 <option value="">Select Activity Level</option>
                 <option value="sedentary">Sedentary (little/no exercise)</option>
@@ -331,9 +506,9 @@ const ProfilePage: React.FC = () => {
                       type="checkbox"
                       checked={formData.healthGoals.includes(goal)}
                       onChange={() => handleMultiSelectChange('healthGoals', goal)}
-                      className="rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-700"
+                      className="rounded border-white/20 text-purple-500 focus:ring-purple-400/50 bg-white/10"
                     />
-                    <span className="ml-2 text-gray-300 text-sm capitalize">{goal.replace('-', ' ')}</span>
+                    <span className="ml-2 text-white/80 text-sm capitalize">{goal.replace('-', ' ')}</span>
                   </label>
                 ))}
               </div>
@@ -349,32 +524,36 @@ const ProfilePage: React.FC = () => {
                       type="checkbox"
                       checked={formData.dietaryPreferences.includes(pref)}
                       onChange={() => handleMultiSelectChange('dietaryPreferences', pref)}
-                      className="rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-700"
+                      className="rounded border-white/20 text-purple-500 focus:ring-purple-400/50 bg-white/10"
                     />
-                    <span className="ml-2 text-gray-300 text-sm capitalize">{pref.replace('-', ' ')}</span>
+                    <span className="ml-2 text-white/80 text-sm capitalize">{pref.replace('-', ' ')}</span>
                   </label>
                 ))}
               </div>
             </div>
 
             {/* Submit Button */}
-            <div className="flex space-x-4">
-              <button
-                type="submit"
-                disabled={saving}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-              >
-                {saving ? 'Saving...' : 'Save Profile'}
-              </button>
-              
-              <Link
-                href="/dashboard"
-                className="px-6 py-3 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors text-center"
-              >
-                Skip for now
-              </Link>
+                <div className="flex space-x-4">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex-1 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 disabled:opacity-50 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                  >
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="px-6 py-3 border border-white/20 text-white/80 hover:text-white rounded-xl hover:bg-white/10 transition-all backdrop-blur-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
             </div>
-          </form>
+          )}
+        </div>
         </div>
       </div>
     </div>

@@ -52,38 +52,52 @@ const SignupPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="relative min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-32 left-32 w-96 h-96 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-32 right-32 w-96 h-96 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
+      </div>
+      
+      <div className="relative z-10 max-w-md w-full space-y-8">
         <div>
           {/* Logo */}
           <div className="text-center">
-            <Link href="/" className="text-3xl font-bold text-blue-400">
-              FiMyra
-            </Link>
+            <div className="inline-flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-blue-400 rounded-xl flex items-center justify-center">
+                <div className="w-6 h-6 bg-white rounded opacity-90"></div>
+              </div>
+              <Link href="/" className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
+                FiMyra
+              </Link>
+            </div>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-            Create your account
+          <h2 className="text-center text-3xl font-extrabold text-white mb-2">
+            Begin Your Journey
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-400">
-            Or{' '}
+          <p className="text-center text-lg text-white/70 mb-6">
+            Create your wellness account
+          </p>
+          <p className="text-center text-sm text-white/60">
+            Already have an account?{' '}
             <Link 
               href="/login" 
-              className="font-medium text-blue-400 hover:text-blue-300 transition-colors"
+              className="font-medium text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 hover:from-purple-300 hover:to-blue-300 transition-all"
             >
-              sign in to your existing account
+              Sign in here
             </Link>
           </p>
         </div>
         
-        <div className="bg-gray-800 rounded-lg shadow-xl p-8 border border-gray-700">
+        <div className="bg-white/5 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/10">
           {error && (
-            <div className="mb-4 p-3 bg-red-900 border border-red-600 rounded-md text-red-200 text-sm">
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-400/30 rounded-xl text-red-300 text-sm backdrop-blur-sm">
               {error}
             </div>
           )}
           
           {success && (
-            <div className="mb-4 p-3 bg-green-900 border border-green-600 rounded-md text-green-200 text-sm">
+            <div className="mb-6 p-4 bg-green-500/10 border border-green-400/30 rounded-xl text-green-300 text-sm backdrop-blur-sm">
               {success}
             </div>
           )}
@@ -100,7 +114,7 @@ const SignupPage: React.FC = () => {
                 required
                 value={formData.name}
                 onChange={handleInputChange}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 bg-gray-700 border border-gray-600 placeholder-gray-400 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:z-10 sm:text-sm"
+                className="mt-2 w-full px-4 py-3 bg-white/10 border border-white/20 placeholder-white/50 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 focus:bg-white/15 transition-all backdrop-blur-sm"
                 placeholder="Enter your full name"
               />
             </div>
@@ -116,7 +130,7 @@ const SignupPage: React.FC = () => {
                 required
                 value={formData.email}
                 onChange={handleInputChange}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 bg-gray-700 border border-gray-600 placeholder-gray-400 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:z-10 sm:text-sm"
+                className="mt-2 w-full px-4 py-3 bg-white/10 border border-white/20 placeholder-white/50 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 focus:bg-white/15 transition-all backdrop-blur-sm"
                 placeholder="Enter your email"
               />
             </div>
@@ -132,7 +146,7 @@ const SignupPage: React.FC = () => {
                 required
                 value={formData.password}
                 onChange={handleInputChange}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 bg-gray-700 border border-gray-600 placeholder-gray-400 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:z-10 sm:text-sm"
+                className="mt-2 w-full px-4 py-3 bg-white/10 border border-white/20 placeholder-white/50 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 focus:bg-white/15 transition-all backdrop-blur-sm"
                 placeholder="Enter your password (min 6 characters)"
               />
             </div>
@@ -148,7 +162,7 @@ const SignupPage: React.FC = () => {
                 required
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 bg-gray-700 border border-gray-600 placeholder-gray-400 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:z-10 sm:text-sm"
+                className="mt-2 w-full px-4 py-3 bg-white/10 border border-white/20 placeholder-white/50 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 focus:bg-white/15 transition-all backdrop-blur-sm"
                 placeholder="Confirm your password"
               />
             </div>
@@ -177,7 +191,7 @@ const SignupPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex justify-center py-3 px-6 border border-transparent text-base font-semibold rounded-xl text-white bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
               >
                 {loading ? (
                   <div className="flex items-center">
@@ -203,7 +217,7 @@ const SignupPage: React.FC = () => {
               <div className="mt-6">
                 <button
                   type="button"
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-sm font-medium text-gray-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  className="w-full inline-flex justify-center py-3 px-6 border border-white/20 rounded-xl shadow-lg bg-white/10 text-base font-medium text-white/90 hover:bg-white/15 hover:border-white/30 focus:outline-none focus:ring-2 focus:ring-purple-400/50 transition-all duration-300 backdrop-blur-sm"
                 >
                   <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                     <path
