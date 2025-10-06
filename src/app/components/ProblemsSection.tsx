@@ -69,11 +69,11 @@ const ProblemsSection: React.FC<ProblemsSectionProps> = () => {
                       <span className="text-2xl">{problem.icon}</span>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-red-300 transition-colors">
+                      <h3 className="text-xl font-semibold text-white mb-2 ">
                         {problem.title}
                       </h3>
-                      <div className="inline-block px-3 py-1 bg-red-400/10 border border-red-400/20 rounded-full mb-3">
-                        <span className="text-red-300 text-sm font-medium">{problem.stat}</span>
+                      <div className="inline-block px-3 py-1 border border-red-400/20 rounded-full mb-3">
+                        <span className=" text-sm font-medium">{problem.stat}</span>
                       </div>
                     </div>
                   </div>

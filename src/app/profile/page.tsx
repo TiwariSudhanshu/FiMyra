@@ -14,6 +14,10 @@ interface HealthProfile {
   medicalConditions?: string[];
   allergies?: string[];
   dietaryPreferences?: string[];
+  hairType?: string;
+  hairConcerns?: string[];
+  skinType?: string;
+  skinConcerns?: string[];
 }
 
 interface User {
@@ -46,7 +50,11 @@ const ProfilePage: React.FC = () => {
     healthGoals: [] as string[],
     medicalConditions: [] as string[],
     allergies: [] as string[],
-    dietaryPreferences: [] as string[]
+    dietaryPreferences: [] as string[],
+    hairType: '',
+    hairConcerns: [] as string[],
+    skinType: '',
+    skinConcerns: [] as string[]
   });
 
   useEffect(() => {
@@ -74,7 +82,11 @@ const ProfilePage: React.FC = () => {
           healthGoals: data.user.healthProfile?.healthGoals || [],
           medicalConditions: data.user.healthProfile?.medicalConditions || [],
           allergies: data.user.healthProfile?.allergies || [],
-          dietaryPreferences: data.user.healthProfile?.dietaryPreferences || []
+          dietaryPreferences: data.user.healthProfile?.dietaryPreferences || [],
+          hairType: data.user.healthProfile?.hairType || '',
+          hairConcerns: data.user.healthProfile?.hairConcerns || [],
+          skinType: data.user.healthProfile?.skinType || '',
+          skinConcerns: data.user.healthProfile?.skinConcerns || []
         });
       } else {
         router.push('/login?redirect=/profile');
@@ -144,7 +156,11 @@ const ProfilePage: React.FC = () => {
         healthGoals: formData.healthGoals,
         medicalConditions: formData.medicalConditions,
         allergies: formData.allergies,
-        dietaryPreferences: formData.dietaryPreferences
+        dietaryPreferences: formData.dietaryPreferences,
+        hairType: formData.hairType || undefined,
+        hairConcerns: formData.hairConcerns,
+        skinType: formData.skinType || undefined,
+        skinConcerns: formData.skinConcerns
       };
 
       const profileResponse = await fetch('/api/profile', {
@@ -362,6 +378,58 @@ const ProfilePage: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Hair Care Profile */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <span>💇‍♀️</span>
+                    Hair Care
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Hair Type:</span>
+                      <span className="text-white">{formData.hairType || 'Not set'}</span>
+                    </div>
+                    {formData.hairConcerns.length > 0 && (
+                      <div>
+                        <span className="text-white/60 block mb-2">Hair Concerns:</span>
+                        <div className="flex flex-wrap gap-2">
+                          {formData.hairConcerns.map((concern, index) => (
+                            <span key={index} className="px-2 py-1 bg-pink-500/20 border border-pink-400/30 rounded text-pink-300 text-xs">
+                              {concern}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Skin Care Profile */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <span>✨</span>
+                    Skin Care
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Skin Type:</span>
+                      <span className="text-white">{formData.skinType || 'Not set'}</span>
+                    </div>
+                    {formData.skinConcerns.length > 0 && (
+                      <div>
+                        <span className="text-white/60 block mb-2">Skin Concerns:</span>
+                        <div className="flex flex-wrap gap-2">
+                          {formData.skinConcerns.map((concern, index) => (
+                            <span key={index} className="px-2 py-1 bg-rose-500/20 border border-rose-400/30 rounded text-rose-300 text-xs">
+                              {concern}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -529,6 +597,93 @@ const ProfilePage: React.FC = () => {
                     <span className="ml-2 text-white/80 text-sm capitalize">{pref.replace('-', ' ')}</span>
                   </label>
                 ))}
+              </div>
+            </div>
+
+            {/* Hair Care Section */}
+            <div className="bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-xl p-6 border border-pink-400/20">
+              <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <span>💇‍♀️</span>
+                Hair Care Profile
+              </h4>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Hair Type</label>
+                  <select
+                    name="hairType"
+                    value={formData.hairType}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-pink-400/50 focus:bg-white/15 transition-all backdrop-blur-sm"
+                  >
+                    <option value="">Select Hair Type</option>
+                    <option value="straight">Straight (Type 1)</option>
+                    <option value="wavy">Wavy (Type 2)</option>
+                    <option value="curly">Curly (Type 3)</option>
+                    <option value="coily">Coily (Type 4)</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Hair Concerns (select all that apply)</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {['Hair Loss', 'Dandruff', 'Dryness', 'Oiliness', 'Split Ends', 'Frizz', 'Lack of Volume', 'Gray Hair', 'Damaged Hair', 'Slow Growth'].map(concern => (
+                      <label key={concern} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={formData.hairConcerns.includes(concern)}
+                          onChange={() => handleMultiSelectChange('hairConcerns', concern)}
+                          className="rounded border-white/20 text-pink-500 focus:ring-pink-400/50 bg-white/10"
+                        />
+                        <span className="ml-2 text-white/80 text-sm">{concern}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Skin Care Section */}
+            <div className="bg-gradient-to-r from-rose-500/10 to-orange-500/10 rounded-xl p-6 border border-rose-400/20">
+              <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <span>✨</span>
+                Skin Care Profile
+              </h4>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Skin Type</label>
+                  <select
+                    name="skinType"
+                    value={formData.skinType}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400/50 focus:border-rose-400/50 focus:bg-white/15 transition-all backdrop-blur-sm"
+                  >
+                    <option value="">Select Skin Type</option>
+                    <option value="normal">Normal</option>
+                    <option value="dry">Dry</option>
+                    <option value="oily">Oily</option>
+                    <option value="combination">Combination</option>
+                    <option value="sensitive">Sensitive</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Skin Concerns (select all that apply)</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {['Acne', 'Aging/Wrinkles', 'Dark Spots', 'Dullness', 'Large Pores', 'Redness', 'Sensitivity', 'Uneven Texture', 'Blackheads', 'Fine Lines', 'Hyperpigmentation', 'Dehydration'].map(concern => (
+                      <label key={concern} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={formData.skinConcerns.includes(concern)}
+                          onChange={() => handleMultiSelectChange('skinConcerns', concern)}
+                          className="rounded border-white/20 text-rose-500 focus:ring-rose-400/50 bg-white/10"
+                        />
+                        <span className="ml-2 text-white/80 text-sm">{concern}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 

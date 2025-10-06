@@ -34,16 +34,7 @@ const Header: React.FC<HeaderProps> = () => {
                     Home
                   </Link>
                 </li>
-                <li>
-                  <a href="#" className="text-white/90 hover:text-white font-medium transition-colors duration-200">
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-white/90 hover:text-white font-medium transition-colors duration-200">
-                    About
-                  </a>
-                </li>
+
                 <li>
                   <a href="#" className="text-white/90 hover:text-white font-medium transition-colors duration-200">
                     Contact
