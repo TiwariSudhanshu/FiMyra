@@ -130,6 +130,18 @@ const UserSchema: Schema<IUser> = new Schema(
       default: false
     }
     ,
+    // Daily meals storage
+    meals: {
+      type: [
+        {
+          date: { type: Date, required: true },
+          breakfast: [String],
+          lunch: [String],
+          dinner: [String]
+        }
+      ],
+      default: []
+    },
     // Password reset fields
     resetOTP: {
       type: String,

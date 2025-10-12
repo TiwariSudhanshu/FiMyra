@@ -314,6 +314,69 @@ const AIHealthCoach: React.FC<AIHealthCoachProps> = ({ userName = 'User' }) => {
               <span>{action.text}</span>
             </button>
           ))}
+
+          {/* Add meal buttons */}
+          <div className="flex items-center gap-2 ml-2">
+            <button
+              onClick={async () => {
+                // use last AI message or a default meal
+                const lastAI = messages.slice().reverse().find(m => m.sender === 'ai')
+                const items = lastAI ? [lastAI.text] : ['Oatmeal, Fruit, Yogurt']
+                try {
+                  await fetch('/api/profile/meals', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mealType: 'breakfast', items })
+                  })
+                  // show a confirmation message
+                  setMessages(prev => [...prev, { id: Date.now().toString(), text: 'Breakfast added to your meals.', sender: 'system', timestamp: new Date() }])
+                } catch (err) {
+                  setMessages(prev => [...prev, { id: Date.now().toString(), text: 'Failed to add breakfast.', sender: 'system', timestamp: new Date() }])
+                }
+              }}
+              className="px-3 py-2 bg-green-600 text-white rounded-md text-sm"
+            >
+              Add Breakfast
+            </button>
+            <button
+              onClick={async () => {
+                const lastAI = messages.slice().reverse().find(m => m.sender === 'ai')
+                const items = lastAI ? [lastAI.text] : ['Salad, Grilled Chicken']
+                try {
+                  await fetch('/api/profile/meals', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mealType: 'lunch', items })
+                  })
+                  setMessages(prev => [...prev, { id: Date.now().toString(), text: 'Lunch added to your meals.', sender: 'system', timestamp: new Date() }])
+                } catch (err) {
+                  setMessages(prev => [...prev, { id: Date.now().toString(), text: 'Failed to add lunch.', sender: 'system', timestamp: new Date() }])
+                }
+              }}
+              className="px-3 py-2 bg-yellow-600 text-white rounded-md text-sm"
+            >
+              Add Lunch
+            </button>
+            <button
+              onClick={async () => {
+                const lastAI = messages.slice().reverse().find(m => m.sender === 'ai')
+                const items = lastAI ? [lastAI.text] : ['Grilled Fish, Veggies']
+                try {
+                  await fetch('/api/profile/meals', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mealType: 'dinner', items })
+                  })
+                  setMessages(prev => [...prev, { id: Date.now().toString(), text: 'Dinner added to your meals.', sender: 'system', timestamp: new Date() }])
+                } catch (err) {
+                  setMessages(prev => [...prev, { id: Date.now().toString(), text: 'Failed to add dinner.', sender: 'system', timestamp: new Date() }])
+                }
+              }}
+              className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm"
+            >
+              Add Dinner
+            </button>
+          </div>
         </div>
       </div>
     </div>
