@@ -1,132 +1,444 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-interface Meal {
-  id: string;
-  name: string;
-  description: string;
-  calories: number;
-  emoji: string;
-  time: string;
-  gradient: string;
-  borderColor: string;
-  calorieColor: string;
-}
+type MealDay = {
+  date: string;
+  breakfast?: string[];
+  lunch?: string[];
+  dinner?: string[];
+  snacks?: string[];
+};
 
-interface MealTrackingProps {
-  meals?: Meal[];
-}
+const SECTION_ORDER: Array<'breakfast'|'lunch'|'snacks'|'dinner'> = ['breakfast','lunch','snacks','dinner'];
 
-const MealCard: React.FC<{ meal: Meal }> = ({ meal }) => (
-  <div className={`${meal.gradient} rounded-xl p-6 border ${meal.borderColor} transition-all hover:scale-105 hover:shadow-lg group`}>
-    <div className="flex items-center justify-between mb-3">
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-          <span className="text-2xl">{meal.emoji}</span>
-        </div>
-        <div className="flex-1">
-          <h4 className="text-white font-semibold text-lg">{meal.name}</h4>
-          <p className="text-white/70 text-sm mt-1">{meal.description}</p>
-        </div>
-      </div>
-      <div className="text-right">
-        <span className={`${meal.calorieColor} text-sm font-semibold`}>{meal.calories} cal</span>
-        <p className="text-white/50 text-xs mt-1">{meal.time}</p>
-      </div>
-    </div>
-  </div>
+const MEAL_ICONS: Record<string, string> = {
+  breakfast: '🍳',
+  lunch: '🍲',
+  snacks: '🍎',
+  dinner: '🍽️'
+};
+
+const Chip: React.FC<{ children: React.ReactNode; active?: boolean; onClick?: ()=>void }> = ({children, active, onClick}) => (
+  <motion.button 
+    onClick={onClick} 
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    className={`px-3 py-1 rounded-full text-sm transition-all ${active ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-purple-500/30' : 'bg-white/5 text-white/80 hover:bg-white/10'}`}
+  >
+    {children}
+  </motion.button>
 );
 
-const EmptyMealCard: React.FC<{ mealName: string; emoji: string }> = ({ mealName, emoji }) => (
-  <div className="bg-white/5 rounded-xl p-6 border border-white/10 border-dashed transition-all hover:bg-white/10 hover:border-white/20 group cursor-pointer">
-    <div className="text-center py-6">
-      <div className="text-3xl mb-3 group-hover:scale-110 transition-transform">{emoji}</div>
-      <p className="text-white/60 text-sm mb-3">No {mealName.toLowerCase()} logged yet</p>
-      <button className="text-blue-300 text-sm font-medium hover:text-blue-200 transition-colors px-4 py-2 rounded-lg bg-blue-400/10 hover:bg-blue-400/20">
-        Add {mealName}
-      </button>
-    </div>
-  </div>
-);
+const MealTracking: React.FC = () => {
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [allMeals, setAllMeals] = useState<MealDay[]>([]);
+  const [mealsData, setMealsData] = useState<MealDay | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [addingMeal, setAddingMeal] = useState(false);
 
-const MealTracking: React.FC<MealTrackingProps> = ({ meals }) => {
-  const defaultMeals: Meal[] = [
-    {
-      id: '1',
-      name: 'Breakfast',
-      description: 'Oatmeal with berries',
-      calories: 387,
-      emoji: '🥗',
-      time: '8:30 AM',
-      gradient: 'bg-gradient-to-r from-green-500/10 to-blue-500/10',
-      borderColor: 'border-green-400/20',
-      calorieColor: 'text-green-300'
-    },
-    {
-      id: '2',
-      name: 'Lunch',
-      description: 'Grilled chicken salad',
-      calories: 542,
-      emoji: '🥪',
-      time: '1:15 PM',
-      gradient: 'bg-gradient-to-r from-orange-500/10 to-yellow-500/10',
-      borderColor: 'border-orange-400/20',
-      calorieColor: 'text-orange-300'
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMealType, setModalMealType] = useState<'breakfast'|'lunch'|'dinner'|'snacks'>('breakfast');
+  const [query, setQuery] = useState('');
+  const [recent, setRecent] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+
+  useEffect(()=>{
+    const raw = localStorage.getItem('fimyra:recentMeals');
+    if(raw){
+      try{ setRecent(JSON.parse(raw)); }catch(e){ setRecent([]); }
     }
-  ];
+  },[]);
 
-  const mealsToShow = meals || defaultMeals;
-  const totalCalories = mealsToShow.reduce((sum, meal) => sum + meal.calories, 0);
+  useEffect(()=>{ fetchMeals(); }, []);
+
+  useEffect(()=>{ 
+    // Update mealsData when currentDate changes
+    const targetDate = new Date(currentDate);
+    targetDate.setHours(0,0,0,0);
+    const found = allMeals.find((d:any)=>{ 
+      const dt=new Date(d.date); 
+      dt.setHours(0,0,0,0); 
+      return dt.getTime()===targetDate.getTime(); 
+    });
+    setMealsData(found || { date: currentDate.toISOString(), breakfast: [], lunch: [], dinner: [], snacks: [] });
+  }, [currentDate, allMeals]);
+
+  const fetchMeals = async () => {
+    setLoading(true); setError(null);
+    try{
+      const res = await fetch('/api/profile/meals');
+      if(!res.ok) throw new Error('Unable to fetch meals');
+      const json = await res.json();
+      setAllMeals(json.meals || []);
+    }catch(err:any){ setError(err?.message || 'Failed to load'); }
+    finally{ setLoading(false); }
+  };
+
+  const navigateDate = (direction: 'prev' | 'next') => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
+    setCurrentDate(newDate);
+  };
+
+  const formatDate = (date: Date) => {
+    const day = date.getDate();
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    return `${day} ${month}`;
+  };
+
+  const isToday = (date: Date) => {
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
+
+  const openModal = (type: 'breakfast'|'lunch'|'dinner'|'snacks') => { setModalMealType(type); setSelected([]); setQuery(''); setIsModalOpen(true); };
+
+  const toggleSelect = (item: string) => setSelected(prev => prev.includes(item) ? prev.filter(p=>p!==item) : [...prev, item]);
+
+  const saveRecent = (items: string[]) => {
+    const next = [...items, ...recent.filter(r=>!items.includes(r))].slice(0,20);
+    setRecent(next); localStorage.setItem('fimyra:recentMeals', JSON.stringify(next));
+  };
+
+  const addMeals = async (type: 'breakfast'|'lunch'|'dinner'|'snacks', items: string[]) => {
+    setAddingMeal(true);
+    try{
+      const res = await fetch('/api/profile/meals', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ mealType: type, items, date: currentDate.toISOString() }) 
+      });
+      const json = await res.json();
+      if(!res.ok) throw new Error(json?.message || 'Failed to add');
+      await fetchMeals();
+      saveRecent(items);
+      setIsModalOpen(false);
+      setSelected([]);
+      setQuery('');
+    }catch(err:any){ 
+      setError(err?.message || 'Add failed'); 
+    } finally {
+      setAddingMeal(false);
+    }
+  };
+
+  const removeMeal = async (type: 'breakfast'|'lunch'|'dinner'|'snacks', itemIndex: number) => {
+    try{
+      const res = await fetch('/api/profile/meals', { 
+        method: 'DELETE', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ mealType: type, itemIndex, date: currentDate.toISOString() }) 
+      });
+      const json = await res.json();
+      if(!res.ok) throw new Error(json?.message || 'Failed to remove');
+      await fetchMeals();
+    }catch(err:any){ 
+      setError(err?.message || 'Remove failed'); 
+    }
+  };
+
+  const filteredRecent = useMemo(()=> recent.filter(r => r.toLowerCase().includes(query.toLowerCase())), [recent, query]);
 
   return (
-    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 shadow-lg">
-      <div className="flex items-center justify-between mb-8">
+    <div className="bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl">
+      <div className="mb-8 flex items-start justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-white mb-2">Meal Tracking</h3>
-          <p className="text-white/60 text-sm">
-            Today's calories: <span className="text-blue-300 font-semibold">{totalCalories}</span> / 2000
-          </p>
+          <h3 className="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Meal Tracking</h3>
+          <p className="text-white/60 text-base">Track what you eat throughout the day — stay consistent, stay healthy.</p>
         </div>
-        <button className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white px-6 py-3 rounded-full text-sm font-medium transition-all shadow-lg hover:shadow-xl hover:scale-105">
-          Add Meal
-        </button>
-      </div>
-      
-      {/* Calorie Progress Bar */}
-      <div className="mb-8">
-        <div className="w-full bg-white/10 rounded-full h-2">
-          <div 
-            className="bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full transition-all duration-700 ease-out" 
-            style={{width: `${Math.min((totalCalories / 2000) * 100, 100)}%`}}
-          ></div>
-        </div>
-        <div className="flex justify-between mt-2">
-          <span className="text-white/50 text-xs">0 cal</span>
-          <span className="text-white/50 text-xs">2000 cal</span>
-        </div>
-      </div>
-      
-      <div className="space-y-6">
-        {/* Logged Meals */}
-        {mealsToShow.map((meal) => (
-          <MealCard key={meal.id} meal={meal} />
-        ))}
         
-        {/* Empty Dinner Slot */}
-        <EmptyMealCard mealName="Dinner" emoji="🍽️" />
-        
-        {/* Snacks Section */}
-        <div className="pt-4 border-t border-white/10">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-white font-medium text-lg">Snacks & Drinks</h4>
-            <button className="text-blue-300 text-sm hover:text-blue-200 transition-colors">
-              + Add Snack
-            </button>
+        {/* Date Navigation */}
+        <div className="flex items-center gap-3 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl px-6 py-3 border border-white/10">
+          <motion.button
+            onClick={() => navigateDate('prev')}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="text-white/60 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </motion.button>
+          
+          <div className="text-center min-w-[80px]">
+            <div className="text-white font-semibold text-lg">{formatDate(currentDate)}</div>
+            {isToday(currentDate) && <div className="text-purple-400 text-xs font-medium">Today</div>}
           </div>
-          <EmptyMealCard mealName="Snack" emoji="🍎" />
+          
+          <motion.button
+            onClick={() => navigateDate('next')}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            disabled={isToday(currentDate)}
+            className={`p-2 rounded-lg transition-colors ${
+              isToday(currentDate) 
+                ? 'text-white/20 cursor-not-allowed' 
+                : 'text-white/60 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </motion.button>
         </div>
       </div>
+
+      {loading ? (
+        <div className="text-white/70 text-center py-8">Loading your meals...</div>
+      ) : error ? (
+        <div className="text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl p-4">{error}</div>
+      ) : (
+        <div className="space-y-4">
+          {SECTION_ORDER.map((section) => {
+            const key = section as keyof MealDay;
+            const items: string[] = (mealsData && (mealsData as any)[key]) || [];
+            return (
+              <motion.div 
+                key={section}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -4, boxShadow: "0 20px 40px rgba(139, 92, 246, 0.15)" }}
+                transition={{ duration: 0.2 }}
+                className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 shadow-lg hover:border-purple-500/30 transition-all"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl flex items-center justify-center text-2xl shadow-lg">
+                      {MEAL_ICONS[section]}
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-semibold text-white capitalize">{section}</h4>
+                      <p className="text-white/50 text-sm">
+                        {items.length === 0 ? 'No items added yet' : `${items.length} item${items.length > 1 ? 's' : ''} logged`}
+                      </p>
+                    </div>
+                  </div>
+                  <motion.button
+                    onClick={() => openModal(section)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-6 py-2.5 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white rounded-full text-sm font-medium shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all"
+                  >
+                    + Add
+                  </motion.button>
+                </div>
+
+                {items.length > 0 && (
+                  <div className="mt-4 space-y-2 pl-[60px]">
+                    {items.map((it, idx) => (
+                      <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className="flex items-center justify-between gap-3 bg-white/5 rounded-lg p-3 hover:bg-white/10 transition-all group"
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full"></div>
+                          <span className="text-white/90 text-sm">{it}</span>
+                        </div>
+                        <motion.button
+                          onClick={() => removeMeal(section, idx)}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-all p-1 hover:bg-red-500/10 rounded"
+                          title="Remove item"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </motion.button>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      <AnimatePresence>
+        {isModalOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsModalOpen(false)}
+              className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+            />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl rounded-3xl p-8 w-full max-w-4xl border border-white/10 shadow-2xl pointer-events-auto"
+              >
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-2xl flex items-center justify-center text-3xl shadow-lg">
+                      {MEAL_ICONS[modalMealType]}
+                    </div>
+                    <div>
+                      <h4 className="text-2xl font-bold text-white capitalize">Add to {modalMealType}</h4>
+                      <p className="text-white/60 text-sm mt-1">Add one or multiple items. Use recent items for quick selection.</p>
+                    </div>
+                  </div>
+                  <motion.button
+                    onClick={() => setIsModalOpen(false)}
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="text-white/60 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </motion.button>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Search Input */}
+                  <div>
+                    <label className="block text-white/80 text-sm font-medium mb-2">Search or Type Meal Name</label>
+                    <input
+                      placeholder="E.g., Grilled chicken salad, Oatmeal with berries..."
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      className="w-full p-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
+                    />
+                  </div>
+
+                  {/* Recent Items */}
+                  <div>
+                    <label className="block text-white/80 text-sm font-medium mb-3">Recent Items</label>
+                    <div className="flex flex-wrap gap-2 min-h-[60px] bg-white/5 rounded-xl p-4 border border-white/5">
+                      {filteredRecent.length === 0 ? (
+                        <span className="text-white/40 text-sm">No recent items yet. Start adding meals!</span>
+                      ) : (
+                        filteredRecent.map((r, i) => (
+                          <motion.button
+                            key={i}
+                            onClick={() => toggleSelect(r)}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                              selected.includes(r)
+                                ? 'bg-gradient-to-r from-purple-500 to-blue-600 text-white shadow-lg shadow-purple-500/30'
+                                : 'bg-white/10 text-white/90 hover:bg-white/20'
+                            }`}
+                          >
+                            {r}
+                          </motion.button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Selected Items */}
+                  <div>
+                    <label className="block text-white/80 text-sm font-medium mb-3">
+                      Selected Items {selected.length > 0 && <span className="text-purple-400">({selected.length})</span>}
+                    </label>
+                    <div className="flex flex-wrap gap-2 min-h-[60px] bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-xl p-4 border border-purple-500/20">
+                      {selected.length === 0 ? (
+                        <span className="text-white/40 text-sm">No items selected. Click on recent items or type above.</span>
+                      ) : (
+                        selected.map((s, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            className="flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 backdrop-blur-sm px-4 py-2 rounded-full border border-purple-500/30"
+                          >
+                            <span className="text-sm text-white">{s}</span>
+                            <motion.button
+                              onClick={() => toggleSelect(s)}
+                              whileHover={{ scale: 1.2 }}
+                              whileTap={{ scale: 0.8 }}
+                              className="text-white/60 hover:text-white transition-colors ml-1"
+                            >
+                              ✕
+                            </motion.button>
+                          </motion.div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="flex gap-3">
+                    <motion.button
+                      onClick={() => {
+                        if (query.trim()) setSelected(prev => prev.includes(query.trim()) ? prev : [...prev, query.trim()]);
+                      }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500/20 to-blue-500/20 hover:from-purple-500/30 hover:to-blue-500/30 border border-purple-500/30 text-white rounded-xl font-medium transition-all shadow-lg hover:shadow-purple-500/20"
+                    >
+                      Add Typed Item
+                    </motion.button>
+                    <motion.button
+                      onClick={() => {
+                        const sample = ['Apple', 'Banana', 'Greek Yogurt'];
+                        setSelected(prev => [...new Set([...prev, ...sample])]);
+                      }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500/20 to-purple-500/20 hover:from-blue-500/30 hover:to-purple-500/30 border border-blue-500/30 text-white rounded-xl font-medium transition-all shadow-lg hover:shadow-blue-500/20"
+                    >
+                      Add Sample Items
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="mt-8 flex items-center justify-between pt-6 border-t border-white/10">
+                  <p className="text-white/50 text-sm">Items will be saved to your meals for {isToday(currentDate) ? 'today' : formatDate(currentDate)}.</p>
+                  <div className="flex items-center gap-3">
+                    <motion.button
+                      onClick={() => setIsModalOpen(false)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      disabled={addingMeal}
+                      className="px-6 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Cancel
+                    </motion.button>
+                    <motion.button
+                      onClick={() => {
+                        const itemsToAdd = selected.length > 0 ? selected : (query.trim() ? [query.trim()] : []);
+                        if (itemsToAdd.length > 0 && !addingMeal) addMeals(modalMealType, itemsToAdd);
+                      }}
+                      whileHover={!addingMeal ? { scale: 1.05, boxShadow: "0 10px 40px rgba(139, 92, 246, 0.4)" } : {}}
+                      whileTap={!addingMeal ? { scale: 0.95 } : {}}
+                      disabled={addingMeal}
+                      className="px-8 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
+                    >
+                      {addingMeal ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Adding...</span>
+                        </>
+                      ) : (
+                        <>Add {selected.length > 0 ? `(${selected.length})` : ''}</>
+                      )}
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

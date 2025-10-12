@@ -28,6 +28,13 @@ export interface IUser extends Document {
   };
   
   profileCompleted?: boolean;
+  meals?: {
+    date?: Date;
+    breakfast?: string[];
+    lunch?: string[];
+    dinner?: string[];
+    snacks?: string[];
+  }[];
   // Password reset fields
   resetOTP?: string;
   resetOTPExpiry?: Date;
@@ -74,10 +81,12 @@ const UserSchema: Schema<IUser> = new Schema(
     },
     googleId: {
       type: String,
+      index: true,
       sparse: true // Allows multiple null values but unique non-null values
     },
     clerkId: {
       type: String,
+      index: true,
       sparse: true
     },
     healthProfile: {
@@ -137,7 +146,8 @@ const UserSchema: Schema<IUser> = new Schema(
           date: { type: Date, required: true },
           breakfast: [String],
           lunch: [String],
-          dinner: [String]
+          dinner: [String],
+          snacks: [String]
         }
       ],
       default: []
@@ -163,10 +173,9 @@ const UserSchema: Schema<IUser> = new Schema(
   }
 );
 
-// Indexes for better query performance
-UserSchema.index({ email: 1 });
-UserSchema.index({ googleId: 1 });
-UserSchema.index({ clerkId: 1 });
+// Note: email uses `unique: true` in the field definition which creates its own index.
+// We declare `index: true` on googleId and clerkId fields above (with `sparse: true`) to
+// create sparse indexes and avoid duplicating index declarations.
 
 // Pre-save middleware to set dynamic default avatar
 UserSchema.pre('save', function(next) {

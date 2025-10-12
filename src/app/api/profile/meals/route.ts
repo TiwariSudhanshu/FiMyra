@@ -43,9 +43,9 @@ async function getUserIdFromReq(req: Request | any) {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { mealType, items } = body as { mealType: string; items: string[] }
+    const { mealType, items, date } = body as { mealType: string; items: string[]; date?: string }
 
-    if (!mealType || !['breakfast', 'lunch', 'dinner'].includes(mealType)) {
+    if (!mealType || !['breakfast', 'lunch', 'dinner', 'snacks'].includes(mealType)) {
       return NextResponse.json({ success: false, message: 'Invalid mealType' }, { status: 400 })
     }
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -59,18 +59,18 @@ export async function POST(req: Request) {
     const user = await User.findById(userId)
     if (!user) return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 })
 
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    const targetDate = date ? new Date(date) : new Date()
+    targetDate.setHours(0, 0, 0, 0)
 
-    // Find existing entry for today
+    // Find existing entry for the target date
     let dayEntry = (user.meals || []).find((m: any) => {
       const d = new Date(m.date)
       d.setHours(0, 0, 0, 0)
-      return d.getTime() === today.getTime()
+      return d.getTime() === targetDate.getTime()
     })
 
     if (!dayEntry) {
-      dayEntry = { date: today, breakfast: [], lunch: [], dinner: [] }
+      dayEntry = { date: targetDate, breakfast: [], lunch: [], dinner: [], snacks: [] }
       user.meals.push(dayEntry)
     }
 
@@ -99,5 +99,59 @@ export async function GET(req: Request) {
   } catch (err: any) {
     console.error('Get meals error:', err)
     return NextResponse.json({ success: false, message: 'Failed to fetch meals' }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const body = await req.json()
+    const { mealType, itemIndex, date } = body as { mealType: string; itemIndex: number; date: string }
+
+    if (!mealType || !['breakfast', 'lunch', 'dinner', 'snacks'].includes(mealType)) {
+      return NextResponse.json({ success: false, message: 'Invalid mealType' }, { status: 400 })
+    }
+    if (itemIndex === undefined || itemIndex < 0) {
+      return NextResponse.json({ success: false, message: 'Invalid item index' }, { status: 400 })
+    }
+    if (!date) {
+      return NextResponse.json({ success: false, message: 'Date is required' }, { status: 400 })
+    }
+
+    const userId = await getUserIdFromReq(req)
+    if (!userId) return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 })
+
+    await connectDB()
+    const user = await User.findById(userId)
+    if (!user) return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 })
+
+    const targetDate = new Date(date)
+    targetDate.setHours(0, 0, 0, 0)
+
+    // Find existing entry for the date
+    const dayEntry = (user.meals || []).find((m: any) => {
+      const d = new Date(m.date)
+      d.setHours(0, 0, 0, 0)
+      return d.getTime() === targetDate.getTime()
+    })
+
+    if (!dayEntry) {
+      return NextResponse.json({ success: false, message: 'No meals found for this date' }, { status: 404 })
+    }
+
+    // Remove item from the array
+    const mealArray = dayEntry[mealType] || []
+    if (itemIndex >= mealArray.length) {
+      return NextResponse.json({ success: false, message: 'Item index out of range' }, { status: 400 })
+    }
+
+    mealArray.splice(itemIndex, 1)
+    dayEntry[mealType] = mealArray
+
+    await user.save()
+
+    return NextResponse.json({ success: true, message: 'Meal item removed', meals: user.meals })
+  } catch (err: any) {
+    console.error('Delete meal error:', err)
+    return NextResponse.json({ success: false, message: 'Failed to remove meal' }, { status: 500 })
   }
 }

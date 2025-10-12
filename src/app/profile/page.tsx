@@ -240,7 +240,7 @@ const ProfilePage: React.FC = () => {
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
               Complete Your 
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">Health Profile</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 ml-5 to-blue-400">Health Profile</span>
             </h1>
             <p className="text-lg text-white/70 max-w-2xl mx-auto leading-relaxed">
               Help us personalize your FiMyra experience with detailed health insights
