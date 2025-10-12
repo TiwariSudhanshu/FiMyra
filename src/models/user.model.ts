@@ -21,9 +21,16 @@ export interface IUser extends Document {
     medicalConditions?: string[];
     allergies?: string[];
     dietaryPreferences?: string[]; // e.g., ['vegetarian', 'vegan', 'keto']
+    hairType?: string;
+    hairConcerns?: string[];
+    skinType?: string;
+    skinConcerns?: string[];
   };
   
   profileCompleted?: boolean;
+  // Password reset fields
+  resetOTP?: string;
+  resetOTPExpiry?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -106,11 +113,30 @@ const UserSchema: Schema<IUser> = new Schema(
       dietaryPreferences: [{
         type: String,
         enum: ['vegetarian', 'vegan', 'pescatarian', 'keto', 'paleo', 'gluten-free', 'dairy-free', 'none']
-      }]
+      }],
+      hairType: {
+        type: String,
+        enum: ['straight', 'wavy', 'curly', 'coily']
+      },
+      hairConcerns: [String],
+      skinType: {
+        type: String,
+        enum: ['normal', 'dry', 'oily', 'combination', 'sensitive']
+      },
+      skinConcerns: [String]
     },
     profileCompleted: {
       type: Boolean,
       default: false
+    }
+    ,
+    // Password reset fields
+    resetOTP: {
+      type: String,
+      select: false,
+    },
+    resetOTPExpiry: {
+      type: Date,
     }
   },
   {

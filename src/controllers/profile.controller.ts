@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { connectDB } from '@/database';
 import User from '@/models/user.model';
 import { v2 as cloudinary } from 'cloudinary';
+import { decode } from 'next-auth/jwt';
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-change-in-production';
@@ -19,24 +20,67 @@ cloudinary.config({
  */
 export async function getProfileController(req: NextRequest) {
   try {
-    // Get token from cookie
-    const token = req.cookies.get('auth-token')?.value;
+    let userId = null;
 
-    if (!token) {
+    // First, try to get NextAuth JWT token (for Google OAuth users)
+    const nextAuthToken = req.cookies.get('next-auth.session-token')?.value || 
+                         req.cookies.get('__Secure-next-auth.session-token')?.value;
+    
+    if (nextAuthToken) {
+      try {
+        const decoded = await decode({
+          token: nextAuthToken,
+          secret: process.env.NEXTAUTH_SECRET!,
+        });
+        
+        console.log('NextAuth decoded token:', decoded); // Debug log
+        
+        // Check for userId in the token (set in JWT callback)
+        if (decoded?.userId) {
+          userId = decoded.userId as string;
+        }
+        // Also check sub field (standard JWT field for user ID)
+        else if (decoded?.sub) {
+          userId = decoded.sub as string;
+        }
+        // Check email and find user by email as fallback
+        else if (decoded?.email) {
+          await connectDB();
+          const user = await User.findOne({ email: decoded.email });
+          if (user) {
+            userId = user._id.toString();
+          }
+        }
+      } catch (nextAuthError) {
+        console.error('NextAuth token verification error:', nextAuthError);
+      }
+    }
+    
+    // Fall back to JWT token authentication (for local auth users)
+    if (!userId) {
+      const token = req.cookies.get('auth-token')?.value;
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET) as any;
+          userId = decoded.userId;
+        } catch (jwtError) {
+          console.error('JWT verification error:', jwtError);
+        }
+      }
+    }
+
+    if (!userId) {
       return NextResponse.json(
         { success: false, message: 'Authentication required' },
         { status: 401 }
       );
     }
 
-    // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-
-    // Connect to database
+    // Connect to database (if not already connected)
     await connectDB();
 
     // Find user
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json(
         { success: false, message: 'User not found' },
@@ -76,18 +120,59 @@ export async function getProfileController(req: NextRequest) {
  */
 export async function updateProfileController(req: NextRequest) {
   try {
-    // Get token from cookie
-    const token = req.cookies.get('auth-token')?.value;
+    let userId = null;
 
-    if (!token) {
+    // First, try to get NextAuth JWT token (for Google OAuth users)
+    const nextAuthToken = req.cookies.get('next-auth.session-token')?.value || 
+                         req.cookies.get('__Secure-next-auth.session-token')?.value;
+    
+    if (nextAuthToken) {
+      try {
+        const decoded = await decode({
+          token: nextAuthToken,
+          secret: process.env.NEXTAUTH_SECRET!,
+        });
+        
+        // Check for userId in the token (set in JWT callback)
+        if (decoded?.userId) {
+          userId = decoded.userId as string;
+        }
+        // Also check sub field (standard JWT field for user ID)
+        else if (decoded?.sub) {
+          userId = decoded.sub as string;
+        }
+        // Check email and find user by email as fallback
+        else if (decoded?.email) {
+          await connectDB();
+          const user = await User.findOne({ email: decoded.email });
+          if (user) {
+            userId = user._id.toString();
+          }
+        }
+      } catch (nextAuthError) {
+        console.error('NextAuth token verification error:', nextAuthError);
+      }
+    }
+    
+    // Fall back to JWT token authentication (for local auth users)
+    if (!userId) {
+      const token = req.cookies.get('auth-token')?.value;
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET) as any;
+          userId = decoded.userId;
+        } catch (jwtError) {
+          console.error('JWT verification error:', jwtError);
+        }
+      }
+    }
+
+    if (!userId) {
       return NextResponse.json(
         { success: false, message: 'Authentication required' },
         { status: 401 }
       );
     }
-
-    // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
 
     // Parse request body
     const { name, healthProfile } = await req.json();
@@ -111,7 +196,7 @@ export async function updateProfileController(req: NextRequest) {
     }
 
     const updatedUser = await User.findByIdAndUpdate(
-      decoded.userId,
+      userId,
       updateData,
       { new: true, runValidators: true }
     );
@@ -169,18 +254,59 @@ export async function updateProfileController(req: NextRequest) {
  */
 export async function updateAvatarController(req: NextRequest) {
   try {
-    // Get token from cookie
-    const token = req.cookies.get('auth-token')?.value;
+    let userId = null;
 
-    if (!token) {
+    // First, try to get NextAuth JWT token (for Google OAuth users)
+    const nextAuthToken = req.cookies.get('next-auth.session-token')?.value || 
+                         req.cookies.get('__Secure-next-auth.session-token')?.value;
+    
+    if (nextAuthToken) {
+      try {
+        const decoded = await decode({
+          token: nextAuthToken,
+          secret: process.env.NEXTAUTH_SECRET!,
+        });
+        
+        // Check for userId in the token (set in JWT callback)
+        if (decoded?.userId) {
+          userId = decoded.userId as string;
+        }
+        // Also check sub field (standard JWT field for user ID)
+        else if (decoded?.sub) {
+          userId = decoded.sub as string;
+        }
+        // Check email and find user by email as fallback
+        else if (decoded?.email) {
+          await connectDB();
+          const user = await User.findOne({ email: decoded.email });
+          if (user) {
+            userId = user._id.toString();
+          }
+        }
+      } catch (nextAuthError) {
+        console.error('NextAuth token verification error:', nextAuthError);
+      }
+    }
+    
+    // Fall back to JWT token authentication (for local auth users)
+    if (!userId) {
+      const token = req.cookies.get('auth-token')?.value;
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET) as any;
+          userId = decoded.userId;
+        } catch (jwtError) {
+          console.error('JWT verification error:', jwtError);
+        }
+      }
+    }
+
+    if (!userId) {
       return NextResponse.json(
         { success: false, message: 'Authentication required' },
         { status: 401 }
       );
     }
-
-    // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
 
     // Parse form data
     const formData = await req.formData();
@@ -239,7 +365,7 @@ export async function updateAvatarController(req: NextRequest) {
 
     // Update user avatar
     const updatedUser = await User.findByIdAndUpdate(
-      decoded.userId,
+      userId,
       { avatar: uploadedImage.secure_url },
       { new: true }
     );

@@ -40,17 +40,35 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
     setInputText('');
     setIsTyping(true);
 
-    // Simulate AI response (replace with actual AI integration later)
-    setTimeout(() => {
+    try {
+      const resp = await fetch('/api/ai/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: inputText })
+      })
+
+      const data = await resp.json()
+
+      const aiText = data?.text ?? data?.error ?? 'Sorry — I could not get a response.'
+
       const aiResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        text: getAIResponse(inputText),
+        text: String(aiText),
         sender: 'ai',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, aiResponse]);
+    } catch (err) {
+      const aiResponse: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        text: 'An error occurred while contacting the AI service.',
+        sender: 'ai',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, aiResponse]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const getAIResponse = (userInput: string): string => {

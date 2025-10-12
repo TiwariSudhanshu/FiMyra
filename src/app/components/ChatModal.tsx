@@ -56,17 +56,34 @@ const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setInputText('');
     setIsTyping(true);
 
-    // Simulate AI response (replace with actual API call)
-    setTimeout(() => {
+    try {
+      const resp = await fetch('/api/ai/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: userMessage.text })
+      })
+
+      const data = await resp.json()
+      const aiText = data?.text ?? data?.error ?? `No response from AI.`
+
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: `Thanks for your message: "${userMessage.text}". I'm here to help you with your wellness journey. This is a demo response - in a real implementation, this would connect to your AI service.`,
+        text: String(aiText),
         isUser: false,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, aiResponse]);
+    } catch (err) {
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'Failed to reach AI service.',
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, aiResponse]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

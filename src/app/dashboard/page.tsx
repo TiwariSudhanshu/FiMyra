@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import WelcomeSection from '../components/dashboard/WelcomeSection';
 import AnalyticsOverview from '../components/dashboard/AnalyticsOverview';
@@ -151,6 +152,7 @@ const getTabs = (user: User | null): Tab[] => [
 ];
 
 const Dashboard: React.FC = () => {
+  const { data: session, status } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -158,8 +160,21 @@ const Dashboard: React.FC = () => {
   const router = useRouter();
 
   useEffect(() => {
-    fetchUserData();
-  }, []);
+    if (status === 'loading') return; // Still loading session
+    
+    if (status === 'unauthenticated') {
+      router.push('/login?redirect=/dashboard');
+      return;
+    }
+
+    if (status === 'authenticated' && session?.user) {
+      // If user is authenticated with NextAuth (Google OAuth), fetch profile
+      fetchUserData();
+    } else {
+      // Try to fetch user data for local auth users
+      fetchUserData();
+    }
+  }, [status, session]);
 
   const fetchUserData = async () => {
     try {
@@ -205,7 +220,7 @@ const Dashboard: React.FC = () => {
 
 
 
-  if (loading) {
+  if (loading || status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">

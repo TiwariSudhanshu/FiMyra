@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { type Secret, type SignOptions } from 'jsonwebtoken';
 import { connectDB } from '@/database';
 import User from '@/models/user.model';
 
@@ -99,9 +99,9 @@ export async function registerController(req: NextRequest) {
         email: savedUser.email,
         name: savedUser.name
       },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
+      JWT_SECRET as Secret,
+      { expiresIn: JWT_EXPIRES_IN as SignOptions['expiresIn'] }
+    ) as unknown as string;
 
     // Prepare response data (exclude password)
     const userData = {
@@ -218,9 +218,9 @@ export async function loginController(req: NextRequest) {
         email: user.email,
         name: user.name
       },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
+      JWT_SECRET as Secret,
+      { expiresIn: JWT_EXPIRES_IN as SignOptions['expiresIn'] }
+    ) as unknown as string;
 
     // Prepare response data (exclude password)
     const userData = {

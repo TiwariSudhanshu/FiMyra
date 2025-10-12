@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 
 const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -42,6 +43,26 @@ const LoginPage: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      const result = await signIn('google', {
+        callbackUrl: '/dashboard',
+        redirect: false,
+      });
+      
+      if (result?.error) {
+        setError('Google login failed. Please try again.');
+      } else if (result?.url) {
+        router.push(result.url);
+      }
+    } catch (error) {
+      setError('Google login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -161,9 +182,9 @@ const LoginPage: React.FC = () => {
                   </div>
 
                   <div className="text-sm">
-                    <a href="#" className="font-medium text-blue-400 hover:text-blue-300 transition-colors">
-                      Forgot your password?
-                    </a>
+                    <a href="/forgot-password" className="font-medium text-blue-400 hover:text-blue-300 transition-colors">
+                        Forgot your password?
+                      </a>
                   </div>
                 </div>
 
@@ -197,7 +218,9 @@ const LoginPage: React.FC = () => {
                   <div className="mt-6">
                     <button
                       type="button"
-                      className="w-full inline-flex justify-center py-4 px-6 border border-white/20 rounded-xl shadow-lg bg-white/10 text-base font-medium text-white/90 hover:bg-white/15 hover:border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all duration-300 backdrop-blur-sm"
+                      onClick={handleGoogleLogin}
+                      disabled={loading}
+                      className="w-full inline-flex justify-center py-4 px-6 border border-white/20 rounded-xl shadow-lg bg-white/10 text-base font-medium text-white/90 hover:bg-white/15 hover:border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all duration-300 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                         <path
@@ -217,7 +240,7 @@ const LoginPage: React.FC = () => {
                           d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                         />
                       </svg>
-                      Continue with Google
+                      {loading ? 'Signing in...' : 'Continue with Google'}
                     </button>
                   </div>
                 </div>
