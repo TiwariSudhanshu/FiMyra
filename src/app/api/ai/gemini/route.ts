@@ -1,20 +1,10 @@
 import { NextResponse } from 'next/server'
+import { GoogleGenAI } from '@google/genai'
 
 type ReqBody = {
   input: string
 }
 
-/**
- * Server route that proxies a simple text generation request to Google's
- * Generative Language (PaLM / Gemini) REST endpoint.
- *
- * Notes / assumptions:
- * - Expects an API key in process.env.GEMINI_API_KEY (API key style as in .env.local)
- * - Expects a model id in process.env.GEMINI_MODEL (default: text-bison-001)
- * - Uses the v1beta2 `:generateText` endpoint and extracts `candidates[0].output`.
- *
- * If you use a different Gemini/Vertex endpoint, update the `url` formation below.
- */
 export async function POST(req: Request) {
   try {
     const body: ReqBody = await req.json()
@@ -25,36 +15,22 @@ export async function POST(req: Request) {
     }
 
     const apiKey = process.env.GEMINI_API_KEY
-    const model = process.env.GEMINI_MODEL || 'text-bison-001'
+    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
 
     if (!apiKey) {
       return NextResponse.json({ error: 'GEMINI_API_KEY is not configured on the server' }, { status: 500 })
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta2/models/${encodeURIComponent(
-      model
-    )}:generateText?key=${encodeURIComponent(apiKey)}`
+    const client = new GoogleGenAI({ apiKey })
 
-    const payload = {
-      prompt: { text: input },
-      temperature: 0.2,
-      maxOutputTokens: 512
-    }
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    // Call the SDK's `models.generateContent` per the example snippet.
+    const response = await client.models.generateContent({
+      model,
+      contents: input,
     })
 
-    const data = await res.json()
-
-    if (!res.ok) {
-      return NextResponse.json({ error: data || 'Gemini API error' }, { status: res.status })
-    }
-
-    // Typical generateText response contains `candidates[0].output`.
-    const text = data?.candidates?.[0]?.output ?? data?.output ?? JSON.stringify(data)
+    // `response.text` holds the generated text in the SDK example
+    const text = (response as any)?.text ?? JSON.stringify(response)
 
     return NextResponse.json({ text })
   } catch (err: any) {
