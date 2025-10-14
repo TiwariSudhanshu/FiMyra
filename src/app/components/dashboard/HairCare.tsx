@@ -1,18 +1,128 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface HairCareProps {}
+
+interface AISuggestions {
+  dailyCare: string[];
+  weeklyTreatments: string[];
+  productRecommendations: string[];
+  lifestyleTips: string[];
+  avoidMistakes: string[];
+}
 
 const HairCare: React.FC<HairCareProps> = () => {
   const [hairType, setHairType] = useState('');
   const [concerns, setConcerns] = useState<string[]>([]);
+  const [goals, setGoals] = useState<string[]>([]);
   const [routine, setRoutine] = useState({
     shampoo: '',
     conditioner: '',
     treatments: [] as string[],
     frequency: ''
   });
+  const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(null);
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [age, setAge] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetchHairCareProfile();
+  }, []);
+
+  const fetchHairCareProfile = async () => {
+    try {
+      const response = await fetch('/api/profile/haircare', {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      
+      if (data.success && data.hairCareProfile) {
+        const profile = data.hairCareProfile;
+        setHairType(profile.hairType || '');
+        setConcerns(profile.concerns || []);
+        setGoals(profile.goals || []);
+        setRoutine({
+          shampoo: profile.routine?.shampoo || '',
+          conditioner: profile.routine?.conditioner || '',
+          treatments: profile.routine?.treatments || [],
+          frequency: profile.routine?.frequency || ''
+        });
+        setNotes(profile.notes || '');
+        setAge(data.age);
+      }
+    } catch (error) {
+      console.error('Error fetching hair care profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!hairType) {
+      alert('Please select your hair type');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await fetch('/api/profile/haircare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          hairType,
+          concerns,
+          routine,
+          goals,
+          notes
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('Hair care profile saved successfully!');
+      } else {
+        alert(data.message || 'Failed to save profile');
+      }
+    } catch (error) {
+      console.error('Error saving hair care profile:', error);
+      alert('Failed to save profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getAISuggestions = async () => {
+    if (!hairType) {
+      alert('Please save your hair care profile first');
+      return;
+    }
+
+    setLoadingAI(true);
+    try {
+      const response = await fetch('/api/ai/haircare-suggestions', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setAiSuggestions(data.suggestions);
+      } else {
+        alert(data.message || 'Failed to get AI suggestions');
+      }
+    } catch (error) {
+      console.error('Error getting AI suggestions:', error);
+      alert('Failed to get AI suggestions');
+    } finally {
+      setLoadingAI(false);
+    }
+  };
 
   const hairTypes = [
     'Straight (Type 1)',
@@ -32,6 +142,17 @@ const HairCare: React.FC<HairCareProps> = () => {
     'Gray Hair',
     'Damaged Hair',
     'Slow Growth'
+  ];
+
+  const hairGoals = [
+    'Grow Longer Hair',
+    'Increase Volume',
+    'Reduce Breakage',
+    'Control Frizz',
+    'Add Shine',
+    'Improve Texture',
+    'Scalp Health',
+    'Color Protection'
   ];
 
   const treatments = [
@@ -61,6 +182,25 @@ const HairCare: React.FC<HairCareProps> = () => {
         : [...prev.treatments, treatment]
     }));
   };
+
+  const toggleGoal = (goal: string) => {
+    setGoals(prev => 
+      prev.includes(goal) 
+        ? prev.filter(g => g !== goal)
+        : [...prev, goal]
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading hair care profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -107,7 +247,7 @@ const HairCare: React.FC<HairCareProps> = () => {
           </div>
 
           {/* Hair Concerns */}
-          <div>
+          <div className="mb-6">
             <label className="block text-sm font-medium text-gray-300 mb-3">Current Concerns</label>
             <div className="grid grid-cols-2 gap-2">
               {hairConcerns.map((concern) => (
@@ -121,6 +261,26 @@ const HairCare: React.FC<HairCareProps> = () => {
                   }`}
                 >
                   {concern}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Hair Goals */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-3">Hair Goals</label>
+            <div className="grid grid-cols-2 gap-2">
+              {hairGoals.map((goal) => (
+                <button
+                  key={goal}
+                  onClick={() => toggleGoal(goal)}
+                  className={`p-2 rounded-lg text-xs transition-all ${
+                    goals.includes(goal)
+                      ? 'bg-purple-500/30 border border-purple-400/50 text-purple-300'
+                      : 'bg-white/10 text-gray-400 hover:bg-white/15 hover:text-gray-300 border border-white/10'
+                  }`}
+                >
+                  {goal}
                 </button>
               ))}
             </div>
@@ -140,7 +300,7 @@ const HairCare: React.FC<HairCareProps> = () => {
             <select
               value={routine.frequency}
               onChange={(e) => setRoutine(prev => ({ ...prev, frequency: e.target.value }))}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400/50"
+              className="w-full px-4 py-3 bg-black border border-white/20 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400/50"
             >
               <option value="">Select frequency</option>
               <option value="daily">Daily</option>
@@ -198,37 +358,146 @@ const HairCare: React.FC<HairCareProps> = () => {
         </div>
       </div>
 
-      {/* Recommendations */}
-      <div className="bg-gradient-to-r from-pink-500/10 to-purple-500/10 backdrop-blur-sm rounded-2xl border border-pink-400/20 p-6">
+      {/* Notes Section */}
+      <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
         <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-          <span className="text-pink-400">💡</span>
-          AI Hair Care Recommendations
+          <span className="text-pink-400">📝</span>
+          Additional Notes
         </h3>
-        
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="bg-white/10 rounded-xl p-4">
-            <h4 className="font-medium text-pink-300 mb-2">Daily Care</h4>
-            <p className="text-gray-300 text-sm">Use a gentle, sulfate-free shampoo and always follow with conditioner to maintain moisture balance.</p>
-          </div>
-          
-          <div className="bg-white/10 rounded-xl p-4">
-            <h4 className="font-medium text-pink-300 mb-2">Weekly Treatment</h4>
-            <p className="text-gray-300 text-sm">Deep condition once a week and use a hair mask to repair damage and add shine.</p>
-          </div>
-          
-          <div className="bg-white/10 rounded-xl p-4">
-            <h4 className="font-medium text-pink-300 mb-2">Protection Tips</h4>
-            <p className="text-gray-300 text-sm">Use heat protectant before styling and sleep on silk pillowcases to reduce friction.</p>
-          </div>
-        </div>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Add any additional notes about your hair care routine, allergies, or preferences..."
+          rows={4}
+          className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400/50 resize-none"
+        />
       </div>
 
-      {/* Save Button */}
-      <div className="text-center">
-        <button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
-          Save Hair Care Profile
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <button 
+          onClick={handleSave}
+          disabled={saving || !hairType}
+          className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
+        >
+          {saving ? 'Saving...' : 'Save Hair Care Profile'}
+        </button>
+        
+        <button 
+          onClick={getAISuggestions}
+          disabled={loadingAI || !hairType}
+          className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none flex items-center justify-center gap-2"
+        >
+          {loadingAI ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              Generating...
+            </>
+          ) : (
+            <>
+              <span>🤖</span>
+              Get AI Suggestions
+            </>
+          )}
         </button>
       </div>
+
+      {/* AI Recommendations */}
+      <AnimatePresence>
+        {aiSuggestions && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-gradient-to-r from-pink-500/10 to-purple-500/10 backdrop-blur-sm rounded-2xl border border-pink-400/20 p-6"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                <span className="text-pink-400">💡</span>
+                AI Hair Care Recommendations
+                {age && <span className="text-sm text-gray-400 font-normal">(Based on age {age})</span>}
+              </h3>
+            </div>
+            
+            <div className="space-y-6">
+              {/* Daily Care */}
+              <div className="bg-white/10 rounded-xl p-4">
+                <h4 className="font-medium text-pink-300 mb-3 flex items-center gap-2">
+                  <span>📅</span> Daily Care Routine
+                </h4>
+                <ul className="space-y-2">
+                  {aiSuggestions.dailyCare.map((tip, index) => (
+                    <li key={index} className="text-gray-300 text-sm flex gap-2">
+                      <span className="text-pink-400">•</span>
+                      <span>{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Weekly Treatments */}
+              <div className="bg-white/10 rounded-xl p-4">
+                <h4 className="font-medium text-purple-300 mb-3 flex items-center gap-2">
+                  <span>🗓️</span> Weekly Treatments
+                </h4>
+                <ul className="space-y-2">
+                  {aiSuggestions.weeklyTreatments.map((treatment, index) => (
+                    <li key={index} className="text-gray-300 text-sm flex gap-2">
+                      <span className="text-purple-400">•</span>
+                      <span>{treatment}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Product Recommendations */}
+              <div className="bg-white/10 rounded-xl p-4">
+                <h4 className="font-medium text-blue-300 mb-3 flex items-center gap-2">
+                  <span>🛍️</span> Product Recommendations
+                </h4>
+                <ul className="space-y-2">
+                  {aiSuggestions.productRecommendations.map((product, index) => (
+                    <li key={index} className="text-gray-300 text-sm flex gap-2">
+                      <span className="text-blue-400">•</span>
+                      <span>{product}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Lifestyle Tips */}
+              <div className="bg-white/10 rounded-xl p-4">
+                <h4 className="font-medium text-green-300 mb-3 flex items-center gap-2">
+                  <span>🥗</span> Lifestyle & Diet Tips
+                </h4>
+                <ul className="space-y-2">
+                  {aiSuggestions.lifestyleTips.map((tip, index) => (
+                    <li key={index} className="text-gray-300 text-sm flex gap-2">
+                      <span className="text-green-400">•</span>
+                      <span>{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Avoid Mistakes */}
+              <div className="bg-white/10 rounded-xl p-4">
+                <h4 className="font-medium text-red-300 mb-3 flex items-center gap-2">
+                  <span>⚠️</span> Common Mistakes to Avoid
+                </h4>
+                <ul className="space-y-2">
+                  {aiSuggestions.avoidMistakes.map((mistake, index) => (
+                    <li key={index} className="text-gray-300 text-sm flex gap-2">
+                      <span className="text-red-400">•</span>
+                      <span>{mistake}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

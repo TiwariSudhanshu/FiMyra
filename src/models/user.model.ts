@@ -125,6 +125,33 @@ export interface IUser extends Document {
     longestStreak: number;
     lastActivityDate: Date;
   };
+  // Hair Care Profile
+  hairCareProfile?: {
+    hairType: string;
+    concerns: string[];
+    routine: {
+      shampoo: string;
+      conditioner: string;
+      treatments: string[];
+      frequency: string;
+    };
+    goals: string[];
+    notes?: string;
+    updatedAt?: Date;
+  };
+  // Skin Care Profile
+  skinCareProfile?: {
+    skinType: string;
+    concerns: string[];
+    routine: {
+      morning: string[];
+      evening: string[];
+      products: string[];
+    };
+    goals: string[];
+    notes?: string;
+    updatedAt?: Date;
+  };
   // Password reset fields
   resetOTP?: string;
   resetOTPExpiry?: Date;
@@ -332,6 +359,33 @@ const UserSchema: Schema<IUser> = new Schema(
       currentStreak: { type: Number, default: 0 },
       longestStreak: { type: Number, default: 0 },
       lastActivityDate: { type: Date }
+    },
+    // Hair Care Profile
+    hairCareProfile: {
+      hairType: { type: String },
+      concerns: [{ type: String }],
+      routine: {
+        shampoo: { type: String },
+        conditioner: { type: String },
+        treatments: [{ type: String }],
+        frequency: { type: String }
+      },
+      goals: [{ type: String }],
+      notes: { type: String },
+      updatedAt: { type: Date, default: Date.now }
+    },
+    // Skin Care Profile
+    skinCareProfile: {
+      skinType: { type: String },
+      concerns: [{ type: String }],
+      routine: {
+        morning: [{ type: String }],
+        evening: [{ type: String }],
+        products: [{ type: String }]
+      },
+      goals: [{ type: String }],
+      notes: { type: String },
+      updatedAt: { type: Date, default: Date.now }
     },
     // Password reset fields
     resetOTP: {
