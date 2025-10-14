@@ -89,6 +89,42 @@ export interface IUser extends Document {
     duration: number;
     startDate: Date;
   };
+  // Daily tracking
+  dailyTracking?: Array<{
+    date: Date;
+    waterIntake: number; // glasses
+    waterGoal: number; // glasses
+    exerciseMinutes: number;
+    exerciseGoal: number; // minutes
+    caloriesConsumed: number;
+    caloriesGoal: number;
+    proteinConsumed: number;
+    proteinGoal: number;
+    carbsConsumed: number;
+    carbsGoal: number;
+    fatConsumed: number;
+    fatGoal: number;
+    stepsCount?: number;
+    stepsGoal?: number;
+    sleepHours?: number;
+    sleepGoal?: number;
+    completed: boolean;
+  }>;
+  // Activity/notifications
+  activities?: Array<{
+    type: 'goal_complete' | 'target_achieved' | 'meal_logged' | 'exercise_completed' | 'streak' | 'milestone';
+    title: string;
+    description: string;
+    timestamp: Date;
+    icon: string;
+    read: boolean;
+  }>;
+  // Streaks
+  streaks?: {
+    currentStreak: number;
+    longestStreak: number;
+    lastActivityDate: Date;
+  };
   // Password reset fields
   resetOTP?: string;
   resetOTPExpiry?: Date;
@@ -256,6 +292,46 @@ const UserSchema: Schema<IUser> = new Schema(
       targetWeight: { type: Number },
       duration: { type: Number },
       startDate: { type: Date }
+    },
+    // Daily tracking
+    dailyTracking: [{
+      date: { type: Date, required: true },
+      waterIntake: { type: Number, default: 0 },
+      waterGoal: { type: Number, default: 8 },
+      exerciseMinutes: { type: Number, default: 0 },
+      exerciseGoal: { type: Number, default: 60 },
+      caloriesConsumed: { type: Number, default: 0 },
+      caloriesGoal: { type: Number, default: 2000 },
+      proteinConsumed: { type: Number, default: 0 },
+      proteinGoal: { type: Number, default: 150 },
+      carbsConsumed: { type: Number, default: 0 },
+      carbsGoal: { type: Number, default: 250 },
+      fatConsumed: { type: Number, default: 0 },
+      fatGoal: { type: Number, default: 65 },
+      stepsCount: { type: Number, default: 0 },
+      stepsGoal: { type: Number, default: 10000 },
+      sleepHours: { type: Number, default: 0 },
+      sleepGoal: { type: Number, default: 8 },
+      completed: { type: Boolean, default: false }
+    }],
+    // Activity/notifications
+    activities: [{
+      type: {
+        type: String,
+        enum: ['goal_complete', 'target_achieved', 'meal_logged', 'exercise_completed', 'streak', 'milestone'],
+        required: true
+      },
+      title: { type: String, required: true },
+      description: { type: String, required: true },
+      timestamp: { type: Date, default: Date.now },
+      icon: { type: String, required: true },
+      read: { type: Boolean, default: false }
+    }],
+    // Streaks
+    streaks: {
+      currentStreak: { type: Number, default: 0 },
+      longestStreak: { type: Number, default: 0 },
+      lastActivityDate: { type: Date }
     },
     // Password reset fields
     resetOTP: {

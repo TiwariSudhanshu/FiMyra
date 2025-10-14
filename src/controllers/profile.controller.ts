@@ -98,6 +98,7 @@ export async function getProfileController(req: NextRequest) {
       healthProfile: user.healthProfile || {},
       profileCompleted: user.profileCompleted || false,
       goal: user.goal || null,
+      streaks: user.streaks || { currentStreak: 0, longestStreak: 0, lastActivityDate: null },
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };

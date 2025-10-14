@@ -13,6 +13,8 @@ import RecentActivity from '../components/dashboard/RecentActivity';
 import HairCare from '../components/dashboard/HairCare';
 import SkinCare from '../components/dashboard/SkinCare';
 import GoalsSection from '../components/dashboard/GoalsSection';
+import OverviewSection from '../components/dashboard/OverviewSection';
+import ActivitySection from '../components/dashboard/ActivitySection';
 import FloatingAIChatButton from '../components/FloatingAIChatButton';
 
 interface HealthProfile {
@@ -48,7 +50,7 @@ interface Tab {
   component: React.ReactNode;
 }
 
-const getTabs = (user: User | null): Tab[] => [
+const getTabs = (user: User | null, onTabChange: (tab: TabId) => void): Tab[] => [
   {
     id: 'overview',
     label: 'Overview',
@@ -61,32 +63,7 @@ const getTabs = (user: User | null): Tab[] => [
     component: user ? (
       <div className="space-y-8">
         <WelcomeSection userName={user.name} auraScore={85} />
-        <div className="grid lg:grid-cols-2 gap-8">
-          <QuickStats user={user} />
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-            <h3 className="text-xl font-semibold text-white mb-4">Quick Actions</h3>
-            <div className="space-y-3">
-              <button 
-                onClick={() => {}} 
-                className="w-full text-left p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-gray-300 hover:text-white transition-all"
-              >
-                📊 View detailed analytics
-              </button>
-              <button 
-                onClick={() => {}} 
-                className="w-full text-left p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-gray-300 hover:text-white transition-all"
-              >
-                🍽️ Log today's meals
-              </button>
-              <button 
-                onClick={() => {}} 
-                className="w-full text-left p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-gray-300 hover:text-white transition-all"
-              >
-                🤖 Get AI recommendations
-              </button>
-            </div>
-          </div>
-        </div>
+        <OverviewSection onTabChange={onTabChange} />
       </div>
     ) : null
   },
@@ -138,7 +115,7 @@ const getTabs = (user: User | null): Tab[] => [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
-    component: <RecentActivity />
+    component: <ActivitySection />
   },
   {
     id: 'haircare',
@@ -308,7 +285,7 @@ const Dashboard: React.FC = () => {
           <div className="mb-8">
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-2">
               <div className="flex flex-wrap gap-1">
-                {getTabs(user).map((tab) => (
+                {getTabs(user, setActiveTab).map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
@@ -330,7 +307,7 @@ const Dashboard: React.FC = () => {
 
           {/* Tab Content */}
           <div className="min-h-[600px]">
-            {getTabs(user).map((tab) => (
+            {getTabs(user, setActiveTab).map((tab) => (
               <div
                 key={tab.id}
                 className={`transition-all duration-300 ${
