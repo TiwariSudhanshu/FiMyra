@@ -97,13 +97,16 @@ export async function getProfileController(req: NextRequest) {
       authProvider: user.authProvider,
       healthProfile: user.healthProfile || {},
       profileCompleted: user.profileCompleted || false,
+      goal: user.goal || null,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };
 
     return NextResponse.json({
       success: true,
-      user: userProfile
+      user: userProfile,
+      healthProfile: user.healthProfile || {},
+      goal: user.goal || null
     });
 
   } catch (error: any) {
@@ -217,6 +220,7 @@ export async function updateProfileController(req: NextRequest) {
       authProvider: updatedUser.authProvider,
       healthProfile: updatedUser.healthProfile || {},
       profileCompleted: updatedUser.profileCompleted || false,
+      goal: updatedUser.goal || null,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt
     };
@@ -224,7 +228,9 @@ export async function updateProfileController(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Profile updated successfully',
-      user: userProfile
+      user: userProfile,
+      healthProfile: updatedUser.healthProfile || {},
+      goal: updatedUser.goal || null
     });
 
   } catch (error: any) {

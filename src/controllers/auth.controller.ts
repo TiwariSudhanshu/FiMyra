@@ -183,10 +183,14 @@ export async function loginController(req: NextRequest) {
       );
     }
 
-    // Find user by email
+    // Find user by email - allow both local and users without authProvider set
     const user = await User.findOne({ 
       email: email.toLowerCase().trim(),
-      authProvider: 'local' // Only allow local login for local users
+      $or: [
+        { authProvider: 'local' },
+        { authProvider: { $exists: false } },
+        { authProvider: null }
+      ]
     }).select('+password'); // Include password field
 
     if (!user) {
@@ -199,9 +203,21 @@ export async function loginController(req: NextRequest) {
       );
     }
 
+    // Check if password exists
+    if (!user.password) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Password not set. Please reset your password or use social login.' 
+        },
+        { status: 401 }
+      );
+    }
+
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      console.error('Password mismatch for user:', user.email);
       return NextResponse.json(
         { 
           success: false, 

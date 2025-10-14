@@ -41,9 +41,16 @@ export async function POST(req: NextRequest) {
     // update password
     const hashed = await bcrypt.hash(newPassword, 12);
     user.password = hashed;
-    user.resetOTP = undefined as any;
-    user.resetOTPExpiry = undefined as any;
-    await user.save();
+    user.authProvider = 'local'; // Ensure authProvider is set to local
+    user.resetOTP = undefined;
+    user.resetOTPExpiry = undefined;
+    user.markModified('password');
+    user.markModified('authProvider');
+    user.markModified('resetOTP');
+    user.markModified('resetOTPExpiry');
+    await user.save({ validateModifiedOnly: true });
+    
+    console.log('Password reset successful for user:', user.email);
 
     // generate token and set cookie
     const token = jwt.sign(
