@@ -82,6 +82,13 @@ export interface IUser extends Document {
     fiber?: number;
     calories?: number;
   }>;
+  goal?: {
+    type: 'weight-loss' | 'weight-gain' | 'muscle-gain' | 'maintenance';
+    currentWeight: number;
+    targetWeight: number;
+    duration: number;
+    startDate: Date;
+  };
   // Password reset fields
   resetOTP?: string;
   resetOTPExpiry?: Date;
@@ -240,6 +247,16 @@ const UserSchema: Schema<IUser> = new Schema(
       fiber: { type: Number },
       calories: { type: Number }
     }],
+    goal: {
+      type: {
+        type: String,
+        enum: ['weight-loss', 'weight-gain', 'muscle-gain', 'maintenance']
+      },
+      currentWeight: { type: Number },
+      targetWeight: { type: Number },
+      duration: { type: Number },
+      startDate: { type: Date }
+    },
     // Password reset fields
     resetOTP: {
       type: String,

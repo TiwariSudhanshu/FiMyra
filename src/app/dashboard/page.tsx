@@ -12,6 +12,7 @@ import AIHealthCoach from '../components/dashboard/AIHealthCoach';
 import RecentActivity from '../components/dashboard/RecentActivity';
 import HairCare from '../components/dashboard/HairCare';
 import SkinCare from '../components/dashboard/SkinCare';
+import GoalsSection from '../components/dashboard/GoalsSection';
 import FloatingAIChatButton from '../components/FloatingAIChatButton';
 
 interface HealthProfile {
@@ -38,7 +39,7 @@ interface User {
   profileCompleted?: boolean;
 }
 
-type TabId = 'overview' | 'analytics' | 'meals' | 'coach' | 'activity' | 'haircare' | 'skincare';
+type TabId = 'overview' | 'analytics' | 'goals' | 'meals' | 'coach' | 'activity' | 'haircare' | 'skincare';
 
 interface Tab {
   id: TabId;
@@ -98,6 +99,16 @@ const getTabs = (user: User | null): Tab[] => [
       </svg>
     ),
     component: <AnalyticsOverview />
+  },
+  {
+    id: 'goals',
+    label: 'My Goals',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    component: <GoalsSection />
   },
   {
     id: 'meals',
