@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 interface HairCareProps {}
 
@@ -64,13 +65,61 @@ const HairCare: React.FC<HairCareProps> = () => {
 
   const handleSave = async () => {
     if (!hairType) {
-      alert('Please select your hair type');
+      toast.error('Please select your hair type');
       return;
     }
 
     setSaving(true);
+    const savePromise = fetch('/api/profile/haircare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        hairType,
+        concerns,
+        routine,
+        goals,
+        notes
+      })
+    }).then(res => res.json());
+
+    toast.promise(savePromise, {
+      loading: 'Saving hair care profile...',
+      success: (data) => {
+        if (data.success) {
+          return 'Hair care profile saved successfully! 💇‍♀️';
+        }
+        throw new Error(data.message || 'Failed to save profile');
+      },
+      error: (err) => err.message || 'Failed to save profile'
+    });
+
     try {
-      const response = await fetch('/api/profile/haircare', {
+      await savePromise;
+    } catch (error) {
+      console.error('Error saving hair care profile:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getAISuggestions = async () => {
+    if (!hairType) {
+      toast.error('Please select your hair type first');
+      return;
+    }
+
+    // Save profile first if not saved, then get suggestions
+    if (!hairType) {
+      toast.error('Please complete your hair profile');
+      return;
+    }
+
+    setLoadingAI(true);
+    
+    // First, save the profile to ensure latest data
+    try {
+      const saveResponse = await fetch('/api/profile/haircare', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -83,42 +132,35 @@ const HairCare: React.FC<HairCareProps> = () => {
         })
       });
 
-      const data = await response.json();
-      if (data.success) {
-        alert('Hair care profile saved successfully!');
-      } else {
-        alert(data.message || 'Failed to save profile');
+      const saveData = await saveResponse.json();
+      if (!saveData.success) {
+        toast.error(saveData.message || 'Failed to save profile');
+        setLoadingAI(false);
+        return;
       }
-    } catch (error) {
-      console.error('Error saving hair care profile:', error);
-      alert('Failed to save profile');
-    } finally {
-      setSaving(false);
-    }
-  };
 
-  const getAISuggestions = async () => {
-    if (!hairType) {
-      alert('Please save your hair care profile first');
-      return;
-    }
-
-    setLoadingAI(true);
-    try {
-      const response = await fetch('/api/ai/haircare-suggestions', {
+      // Now get AI suggestions
+      const suggestionPromise = fetch('/api/ai/haircare-suggestions', {
         method: 'POST',
         credentials: 'include'
+      }).then(res => res.json());
+
+      toast.promise(suggestionPromise, {
+        loading: 'Generating AI recommendations... 🤖',
+        success: (data) => {
+          if (data.success) {
+            setAiSuggestions(data.suggestions);
+            return 'AI recommendations generated successfully! ✨';
+          }
+          throw new Error(data.message || 'Failed to get AI suggestions');
+        },
+        error: (err) => err.message || 'Failed to get AI suggestions'
       });
 
-      const data = await response.json();
-      if (data.success) {
-        setAiSuggestions(data.suggestions);
-      } else {
-        alert(data.message || 'Failed to get AI suggestions');
-      }
+      await suggestionPromise;
     } catch (error) {
       console.error('Error getting AI suggestions:', error);
-      alert('Failed to get AI suggestions');
+      toast.error('Failed to get AI suggestions');
     } finally {
       setLoadingAI(false);
     }
@@ -174,6 +216,14 @@ const HairCare: React.FC<HairCareProps> = () => {
     );
   };
 
+  const toggleGoal = (goal: string) => {
+    setGoals(prev => 
+      prev.includes(goal) 
+        ? prev.filter(g => g !== goal)
+        : [...prev, goal]
+    );
+  };
+
   const toggleTreatment = (treatment: string) => {
     setRoutine(prev => ({
       ...prev,
@@ -181,14 +231,6 @@ const HairCare: React.FC<HairCareProps> = () => {
         ? prev.treatments.filter(t => t !== treatment)
         : [...prev.treatments, treatment]
     }));
-  };
-
-  const toggleGoal = (goal: string) => {
-    setGoals(prev => 
-      prev.includes(goal) 
-        ? prev.filter(g => g !== goal)
-        : [...prev, goal]
-    );
   };
 
   if (loading) {
