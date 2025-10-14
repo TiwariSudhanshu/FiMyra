@@ -1,31 +1,51 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
+type MealItem = {
+  name: string;
+  quantity?: number;
+  unit?: string;
+  carbs?: number;
+  protein?: number;
+  fat?: number;
+  fiber?: number;
+  calories?: number;
+};
 
 type MealDay = {
   date: string;
-  breakfast?: string[];
-  lunch?: string[];
-  dinner?: string[];
-  snacks?: string[];
+  breakfast?: MealItem[];
+  lunch?: MealItem[];
+  dinner?: MealItem[];
+  snacks?: MealItem[];
 };
 
-const SECTION_ORDER: Array<'breakfast'|'lunch'|'snacks'|'dinner'> = ['breakfast','lunch','snacks','dinner'];
+const SECTION_ORDER: Array<"breakfast" | "lunch" | "snacks" | "dinner"> = [
+  "breakfast",
+  "lunch",
+  "snacks",
+  "dinner",
+];
 
 const MEAL_ICONS: Record<string, string> = {
-  breakfast: '🍳',
-  lunch: '🍲',
-  snacks: '🍎',
-  dinner: '🍽️'
+  breakfast: "🍳",
+  lunch: "🍲",
+  snacks: "🍎",
+  dinner: "🍽️",
 };
 
-const Chip: React.FC<{ children: React.ReactNode; active?: boolean; onClick?: ()=>void }> = ({children, active, onClick}) => (
-  <motion.button 
-    onClick={onClick} 
+const Chip: React.FC<{
+  children: React.ReactNode;
+  active?: boolean;
+  onClick?: () => void;
+}> = ({ children, active, onClick }) => (
+  <motion.button
+    onClick={onClick}
     whileHover={{ scale: 1.05 }}
     whileTap={{ scale: 0.95 }}
-    className={`px-3 py-1 rounded-full text-sm transition-all ${active ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-purple-500/30' : 'bg-white/5 text-white/80 hover:bg-white/10'}`}
+    className={`px-3 py-1 rounded-full text-sm transition-all ${active ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-purple-500/30" : "bg-white/5 text-white/80 hover:bg-white/10"}`}
   >
     {children}
   </motion.button>
@@ -40,52 +60,77 @@ const MealTracking: React.FC = () => {
   const [addingMeal, setAddingMeal] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMealType, setModalMealType] = useState<'breakfast'|'lunch'|'dinner'|'snacks'>('breakfast');
-  const [query, setQuery] = useState('');
+  const [modalMealType, setModalMealType] = useState<
+    "breakfast" | "lunch" | "dinner" | "snacks"
+  >("breakfast");
+  const [query, setQuery] = useState("");
   const [recent, setRecent] = useState<string[]>([]);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<
+    Array<{ name: string; quantity: number; unit: string }>
+  >([]);
+  const [savedMeals, setSavedMeals] = useState<string[]>([]);
+  const [savingSavedMeal, setSavingSavedMeal] = useState(false);
+  const [newSavedName, setNewSavedName] = useState("");
 
-  useEffect(()=>{
-    const raw = localStorage.getItem('fimyra:recentMeals');
-    if(raw){
-      try{ setRecent(JSON.parse(raw)); }catch(e){ setRecent([]); }
+  useEffect(() => {
+    const raw = localStorage.getItem("fimyra:recentMeals");
+    if (raw) {
+      try {
+        setRecent(JSON.parse(raw));
+      } catch (e) {
+        setRecent([]);
+      }
     }
-  },[]);
+  }, []);
 
-  useEffect(()=>{ fetchMeals(); }, []);
+  useEffect(() => {
+    fetchMeals();
+  }, []);
 
-  useEffect(()=>{ 
+  useEffect(() => {
     // Update mealsData when currentDate changes
     const targetDate = new Date(currentDate);
-    targetDate.setHours(0,0,0,0);
-    const found = allMeals.find((d:any)=>{ 
-      const dt=new Date(d.date); 
-      dt.setHours(0,0,0,0); 
-      return dt.getTime()===targetDate.getTime(); 
+    targetDate.setHours(0, 0, 0, 0);
+    const found = allMeals.find((d: any) => {
+      const dt = new Date(d.date);
+      dt.setHours(0, 0, 0, 0);
+      return dt.getTime() === targetDate.getTime();
     });
-    setMealsData(found || { date: currentDate.toISOString(), breakfast: [], lunch: [], dinner: [], snacks: [] });
+    setMealsData(
+      found || {
+        date: currentDate.toISOString(),
+        breakfast: [],
+        lunch: [],
+        dinner: [],
+        snacks: [],
+      }
+    );
   }, [currentDate, allMeals]);
 
   const fetchMeals = async () => {
-    setLoading(true); setError(null);
-    try{
-      const res = await fetch('/api/profile/meals');
-      if(!res.ok) throw new Error('Unable to fetch meals');
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/profile/meals");
+      if (!res.ok) throw new Error("Unable to fetch meals");
       const json = await res.json();
       setAllMeals(json.meals || []);
-    }catch(err:any){ setError(err?.message || 'Failed to load'); }
-    finally{ setLoading(false); }
+    } catch (err: any) {
+      setError(err?.message || "Failed to load");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const navigateDate = (direction: 'prev' | 'next') => {
+  const navigateDate = (direction: "prev" | "next") => {
     const newDate = new Date(currentDate);
-    newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
+    newDate.setDate(newDate.getDate() + (direction === "next" ? 1 : -1));
     setCurrentDate(newDate);
   };
 
   const formatDate = (date: Date) => {
     const day = date.getDate();
-    const month = date.toLocaleString('en-US', { month: 'short' });
+    const month = date.toLocaleString("en-US", { month: "short" });
     return `${day} ${month}`;
   };
 
@@ -94,113 +139,215 @@ const MealTracking: React.FC = () => {
     return date.toDateString() === today.toDateString();
   };
 
-  const openModal = (type: 'breakfast'|'lunch'|'dinner'|'snacks') => { setModalMealType(type); setSelected([]); setQuery(''); setIsModalOpen(true); };
-
-  const toggleSelect = (item: string) => setSelected(prev => prev.includes(item) ? prev.filter(p=>p!==item) : [...prev, item]);
-
-  const saveRecent = (items: string[]) => {
-    const next = [...items, ...recent.filter(r=>!items.includes(r))].slice(0,20);
-    setRecent(next); localStorage.setItem('fimyra:recentMeals', JSON.stringify(next));
+  const openModal = (type: "breakfast" | "lunch" | "dinner" | "snacks") => {
+    setModalMealType(type);
+    setSelected([]);
+    setQuery("");
+    setIsModalOpen(true);
   };
 
-  const addMeals = async (type: 'breakfast'|'lunch'|'dinner'|'snacks', items: string[]) => {
+  // load saved meals when modal opens
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const fetchSaved = async () => {
+      try {
+        const res = await fetch("/api/profile/saved-meals");
+        if (!res.ok) return;
+        const json = await res.json();
+        setSavedMeals(json.savedMeals || []);
+      } catch (e) {
+        // ignore
+      }
+    };
+    fetchSaved();
+  }, [isModalOpen]);
+
+  const toggleSelect = (itemName: string) => {
+    setSelected((prev) => {
+      const exists = prev.find((p) => p.name === itemName);
+      if (exists) {
+        return prev.filter((p) => p.name !== itemName);
+      } else {
+        return [...prev, { name: itemName, quantity: 1, unit: "serving" }];
+      }
+    });
+  };
+
+  const updateQuantity = (itemName: string, quantity: number) => {
+    setSelected((prev) =>
+      prev.map((p) =>
+        p.name === itemName ? { ...p, quantity: Math.max(0.1, quantity) } : p
+      )
+    );
+  };
+
+  const updateUnit = (itemName: string, unit: string) => {
+    setSelected((prev) =>
+      prev.map((p) => (p.name === itemName ? { ...p, unit } : p))
+    );
+  };
+
+  const saveRecent = (items: string[]) => {
+    const next = [...items, ...recent.filter((r) => !items.includes(r))].slice(
+      0,
+      20
+    );
+    setRecent(next);
+    localStorage.setItem("fimyra:recentMeals", JSON.stringify(next));
+  };
+
+  const addMeals = async (
+    type: "breakfast" | "lunch" | "dinner" | "snacks",
+    items: Array<{ name: string; quantity: number; unit: string }>
+  ) => {
     setAddingMeal(true);
-    try{
-      const res = await fetch('/api/profile/meals', { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ mealType: type, items, date: currentDate.toISOString() }) 
+    try {
+      const res = await fetch("/api/profile/meals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mealType: type,
+          items,
+          date: currentDate.toISOString(),
+        }),
       });
       const json = await res.json();
-      if(!res.ok) throw new Error(json?.message || 'Failed to add');
+      if (!res.ok) throw new Error(json?.message || "Failed to add");
       await fetchMeals();
-      saveRecent(items);
+      saveRecent(items.map((i) => i.name));
       setIsModalOpen(false);
       setSelected([]);
-      setQuery('');
-    }catch(err:any){ 
-      setError(err?.message || 'Add failed'); 
+      setQuery("");
+    } catch (err: any) {
+      setError(err?.message || "Add failed");
     } finally {
       setAddingMeal(false);
     }
   };
 
-  const removeMeal = async (type: 'breakfast'|'lunch'|'dinner'|'snacks', itemIndex: number) => {
-    try{
-      const res = await fetch('/api/profile/meals', { 
-        method: 'DELETE', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ mealType: type, itemIndex, date: currentDate.toISOString() }) 
+  const removeMeal = async (
+    type: "breakfast" | "lunch" | "dinner" | "snacks",
+    itemIndex: number
+  ) => {
+    try {
+      const res = await fetch("/api/profile/meals", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mealType: type,
+          itemIndex,
+          date: currentDate.toISOString(),
+        }),
       });
       const json = await res.json();
-      if(!res.ok) throw new Error(json?.message || 'Failed to remove');
+      if (!res.ok) throw new Error(json?.message || "Failed to remove");
       await fetchMeals();
-    }catch(err:any){ 
-      setError(err?.message || 'Remove failed'); 
+    } catch (err: any) {
+      setError(err?.message || "Remove failed");
     }
   };
 
-  const filteredRecent = useMemo(()=> recent.filter(r => r.toLowerCase().includes(query.toLowerCase())), [recent, query]);
+  const filteredRecent = useMemo(
+    () => recent.filter((r) => r.toLowerCase().includes(query.toLowerCase())),
+    [recent, query]
+  );
 
   return (
     <div className="bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl">
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <h3 className="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Meal Tracking</h3>
-          <p className="text-white/60 text-base">Track what you eat throughout the day — stay consistent, stay healthy.</p>
+          <h3 className="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+            Meal Tracking
+          </h3>
+          <p className="text-white/60 text-base">
+            Track what you eat throughout the day — stay consistent, stay
+            healthy.
+          </p>
         </div>
-        
+
         {/* Date Navigation */}
         <div className="flex items-center gap-3 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl px-6 py-3 border border-white/10">
           <motion.button
-            onClick={() => navigateDate('prev')}
+            onClick={() => navigateDate("prev")}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             className="text-white/60 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
           </motion.button>
-          
+
           <div className="text-center min-w-[80px]">
-            <div className="text-white font-semibold text-lg">{formatDate(currentDate)}</div>
-            {isToday(currentDate) && <div className="text-purple-400 text-xs font-medium">Today</div>}
+            <div className="text-white font-semibold text-lg">
+              {formatDate(currentDate)}
+            </div>
+            {isToday(currentDate) && (
+              <div className="text-purple-400 text-xs font-medium">Today</div>
+            )}
           </div>
-          
+
           <motion.button
-            onClick={() => navigateDate('next')}
+            onClick={() => navigateDate("next")}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             disabled={isToday(currentDate)}
             className={`p-2 rounded-lg transition-colors ${
-              isToday(currentDate) 
-                ? 'text-white/20 cursor-not-allowed' 
-                : 'text-white/60 hover:text-white hover:bg-white/10'
+              isToday(currentDate)
+                ? "text-white/20 cursor-not-allowed"
+                : "text-white/60 hover:text-white hover:bg-white/10"
             }`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
             </svg>
           </motion.button>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-white/70 text-center py-8">Loading your meals...</div>
+        <div className="text-white/70 text-center py-8">
+          Loading your meals...
+        </div>
       ) : error ? (
-        <div className="text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl p-4">{error}</div>
+        <div className="text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+          {error}
+        </div>
       ) : (
         <div className="space-y-4">
           {SECTION_ORDER.map((section) => {
             const key = section as keyof MealDay;
-            const items: string[] = (mealsData && (mealsData as any)[key]) || [];
+            const items: MealItem[] =
+              (mealsData && (mealsData as any)[key]) || [];
             return (
-              <motion.div 
+              <motion.div
                 key={section}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -4, boxShadow: "0 20px 40px rgba(139, 92, 246, 0.15)" }}
+                whileHover={{
+                  y: -4,
+                  boxShadow: "0 20px 40px rgba(139, 92, 246, 0.15)",
+                }}
                 transition={{ duration: 0.2 }}
                 className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 shadow-lg hover:border-purple-500/30 transition-all"
               >
@@ -210,9 +357,13 @@ const MealTracking: React.FC = () => {
                       {MEAL_ICONS[section]}
                     </div>
                     <div>
-                      <h4 className="text-xl font-semibold text-white capitalize">{section}</h4>
+                      <h4 className="text-xl font-semibold text-white capitalize">
+                        {section}
+                      </h4>
                       <p className="text-white/50 text-sm">
-                        {items.length === 0 ? 'No items added yet' : `${items.length} item${items.length > 1 ? 's' : ''} logged`}
+                        {items.length === 0
+                          ? "No items added yet"
+                          : `${items.length} item${items.length > 1 ? "s" : ""} logged`}
                       </p>
                     </div>
                   </div>
@@ -228,7 +379,7 @@ const MealTracking: React.FC = () => {
 
                 {items.length > 0 && (
                   <div className="mt-4 space-y-2 pl-[60px]">
-                    {items.map((it, idx) => (
+                    {items.map((item, idx) => (
                       <motion.div
                         key={idx}
                         initial={{ opacity: 0, x: -10 }}
@@ -238,7 +389,37 @@ const MealTracking: React.FC = () => {
                       >
                         <div className="flex items-center gap-3 flex-1">
                           <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full"></div>
-                          <span className="text-white/90 text-sm">{it}</span>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-white/90 text-sm font-medium">
+                                {item.name}
+                              </span>
+                              {item.quantity && item.quantity !== 1 && (
+                                <span className="text-xs text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
+                                  {item.quantity} {item.unit || "serving"}
+                                  {item.quantity > 1 ? "s" : ""}
+                                </span>
+                              )}
+                            </div>
+                            {item.calories !== undefined && (
+                              <div className="flex gap-3 mt-1 text-xs text-white/60">
+                                <span>🔥 {Math.round(item.calories)} cal</span>
+                                {item.protein !== undefined && (
+                                  <span>
+                                    💪 {Math.round(item.protein)}g protein
+                                  </span>
+                                )}
+                                {item.carbs !== undefined && (
+                                  <span>
+                                    🍞 {Math.round(item.carbs)}g carbs
+                                  </span>
+                                )}
+                                {item.fat !== undefined && (
+                                  <span>🥑 {Math.round(item.fat)}g fat</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <motion.button
                           onClick={() => removeMeal(section, idx)}
@@ -247,8 +428,18 @@ const MealTracking: React.FC = () => {
                           className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-all p-1 hover:bg-red-500/10 rounded"
                           title="Remove item"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
                           </svg>
                         </motion.button>
                       </motion.div>
@@ -264,7 +455,7 @@ const MealTracking: React.FC = () => {
       <AnimatePresence>
         {isModalOpen && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -285,8 +476,13 @@ const MealTracking: React.FC = () => {
                       {MEAL_ICONS[modalMealType]}
                     </div>
                     <div>
-                      <h4 className="text-2xl font-bold text-white capitalize">Add to {modalMealType}</h4>
-                      <p className="text-white/60 text-sm mt-1">Add one or multiple items. Use recent items for quick selection.</p>
+                      <h4 className="text-2xl font-bold text-white capitalize">
+                        Add to {modalMealType}
+                      </h4>
+                      <p className="text-white/60 text-sm mt-1">
+                        Add one or multiple items. Use recent items for quick
+                        selection.
+                      </p>
                     </div>
                   </div>
                   <motion.button
@@ -295,8 +491,18 @@ const MealTracking: React.FC = () => {
                     whileTap={{ scale: 0.9 }}
                     className="text-white/60 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                   </motion.button>
                 </div>
@@ -304,7 +510,9 @@ const MealTracking: React.FC = () => {
                 <div className="space-y-6">
                   {/* Search Input */}
                   <div>
-                    <label className="block text-white/80 text-sm font-medium mb-2">Search or Type Meal Name</label>
+                    <label className="block text-white/80 text-sm font-medium mb-2">
+                      Search or Type Meal Name
+                    </label>
                     <input
                       placeholder="E.g., Grilled chicken salad, Oatmeal with berries..."
                       value={query}
@@ -315,10 +523,14 @@ const MealTracking: React.FC = () => {
 
                   {/* Recent Items */}
                   <div>
-                    <label className="block text-white/80 text-sm font-medium mb-3">Recent Items</label>
+                    <label className="block text-white/80 text-sm font-medium mb-3">
+                      Recent Items
+                    </label>
                     <div className="flex flex-wrap gap-2 min-h-[60px] bg-white/5 rounded-xl p-4 border border-white/5">
                       {filteredRecent.length === 0 ? (
-                        <span className="text-white/40 text-sm">No recent items yet. Start adding meals!</span>
+                        <span className="text-white/40 text-sm">
+                          No recent items yet. Start adding meals!
+                        </span>
                       ) : (
                         filteredRecent.map((r, i) => (
                           <motion.button
@@ -327,9 +539,9 @@ const MealTracking: React.FC = () => {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                              selected.includes(r)
-                                ? 'bg-gradient-to-r from-purple-500 to-blue-600 text-white shadow-lg shadow-purple-500/30'
-                                : 'bg-white/10 text-white/90 hover:bg-white/20'
+                              selected.find((s) => s.name === r)
+                                ? "bg-gradient-to-r from-purple-500 to-blue-600 text-white shadow-lg shadow-purple-500/30"
+                                : "bg-white/10 text-white/90 hover:bg-white/20"
                             }`}
                           >
                             {r}
@@ -339,29 +551,161 @@ const MealTracking: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Saved Items */}
+                  <div>
+                    <label className="block text-white/80 text-sm font-medium mb-3">
+                      Saved Meals (from your library)
+                    </label>
+                    <div className="flex flex-wrap gap-2 min-h-[60px] bg-white/5 rounded-xl p-4 border border-white/5">
+                      {savedMeals.length === 0 ? (
+                        <span className="text-white/40 text-sm">
+                          No saved meals yet. Save one below.
+                        </span>
+                      ) : (
+                        savedMeals
+                          .filter((s) =>
+                            s.toLowerCase().includes(query.toLowerCase())
+                          )
+                          .map((s, i) => (
+                            <motion.button
+                              key={i}
+                              onClick={() => toggleSelect(s)}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selected.find((sel) => sel.name === s) ? "bg-gradient-to-r from-purple-500 to-blue-600 text-white shadow-lg" : "bg-white/10 text-white/90 hover:bg-white/20"}`}
+                            >
+                              {s}
+                            </motion.button>
+                          ))
+                      )}
+                    </div>
+
+                    <div className="mt-3 flex gap-2">
+                      <input
+                        value={newSavedName}
+                        onChange={(e) => setNewSavedName(e.target.value)}
+                        placeholder="Save meal name..."
+                        className="flex-1 p-3 rounded-lg bg-white/5 border border-white/10 text-white"
+                      />
+                      <button
+                        onClick={async () => {
+                          const name = newSavedName.trim();
+                          if (!name) return;
+                          setSavingSavedMeal(true);
+                          try {
+                            const res = await fetch(
+                              "/api/profile/saved-meals",
+                              {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ name }),
+                              }
+                            );
+                            const json = await res.json();
+                            if (res.ok) {
+                              setSavedMeals(json.savedMeals || []);
+                              setNewSavedName("");
+                            }
+                          } catch (e) {
+                          } finally {
+                            setSavingSavedMeal(false);
+                          }
+                        }}
+                        className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 text-white"
+                      >
+                        {savingSavedMeal ? "Saving..." : "Save"}
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Selected Items */}
                   <div>
                     <label className="block text-white/80 text-sm font-medium mb-3">
-                      Selected Items {selected.length > 0 && <span className="text-purple-400">({selected.length})</span>}
+                      Selected Items{" "}
+                      {selected.length > 0 && (
+                        <span className="text-purple-400">
+                          ({selected.length})
+                        </span>
+                      )}
                     </label>
-                    <div className="flex flex-wrap gap-2 min-h-[60px] bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-xl p-4 border border-purple-500/20">
+                    <div className="flex flex-col gap-3 min-h-[60px] bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-xl p-4 border border-purple-500/20">
                       {selected.length === 0 ? (
-                        <span className="text-white/40 text-sm">No items selected. Click on recent items or type above.</span>
+                        <span className="text-white/40 text-sm">
+                          No items selected. Click on recent items or type
+                          above.
+                        </span>
                       ) : (
-                        selected.map((s, i) => (
+                        selected.map((item, i) => (
                           <motion.div
                             key={i}
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            className="flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 backdrop-blur-sm px-4 py-2 rounded-full border border-purple-500/30"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="flex items-center gap-3 bg-gradient-to-r from-purple-500/20 to-blue-500/20 backdrop-blur-sm px-4 py-3 rounded-xl border border-purple-500/30"
                           >
-                            <span className="text-sm text-white">{s}</span>
+                            <span className="text-sm text-white font-medium flex-1">
+                              {item.name}
+                            </span>
+
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min="0.1"
+                                step="0.5"
+                                value={item.quantity}
+                                onChange={(e) =>
+                                  updateQuantity(
+                                    item.name,
+                                    parseFloat(e.target.value) || 1
+                                  )
+                                }
+                                className="w-16 px-2 py-1 bg-white/10 border border-white/20 rounded-lg text-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                              />
+                              <select
+                                value={item.unit}
+                                onChange={(e) =>
+                                  updateUnit(item.name, e.target.value)
+                                }
+                                className="px-2 py-1 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 bg-gradient-to-r from-purple-500 to-blue-600 appearance-none"
+                              >
+                                <option value="serving" className="bg-gray-900">
+                                  serving
+                                </option>
+                                <option value="cup" className="bg-gray-900">
+                                  cup
+                                </option>
+                                <option value="bowl" className="bg-gray-900">
+                                  bowl
+                                </option>
+                                <option value="plate" className="bg-gray-900">
+                                  plate
+                                </option>
+                                <option value="piece" className="bg-gray-900">
+                                  piece
+                                </option>
+                                <option value="slice" className="bg-gray-900">
+                                  slice
+                                </option>
+                                <option value="tbsp" className="bg-gray-900">
+                                  tbsp
+                                </option>
+                                <option value="tsp" className="bg-gray-900">
+                                  tsp
+                                </option>
+                                <option value="oz" className="bg-gray-900">
+                                  oz
+                                </option>
+                                <option value="g" className="bg-gray-900">
+                                  g
+                                </option>
+                              </select>
+                            </div>
+
                             <motion.button
-                              onClick={() => toggleSelect(s)}
+                              onClick={() => toggleSelect(item.name)}
                               whileHover={{ scale: 1.2 }}
                               whileTap={{ scale: 0.8 }}
-                              className="text-white/60 hover:text-white transition-colors ml-1"
+                              className="text-white/60 hover:text-white transition-colors p-1"
                             >
                               ✕
                             </motion.button>
@@ -375,7 +719,17 @@ const MealTracking: React.FC = () => {
                   <div className="flex gap-3">
                     <motion.button
                       onClick={() => {
-                        if (query.trim()) setSelected(prev => prev.includes(query.trim()) ? prev : [...prev, query.trim()]);
+                        const trimmed = query.trim();
+                        if (trimmed) {
+                          setSelected((prev) => {
+                            const exists = prev.find((p) => p.name === trimmed);
+                            if (exists) return prev;
+                            return [
+                              ...prev,
+                              { name: trimmed, quantity: 1, unit: "serving" },
+                            ];
+                          });
+                        }
                       }}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -385,8 +739,17 @@ const MealTracking: React.FC = () => {
                     </motion.button>
                     <motion.button
                       onClick={() => {
-                        const sample = ['Apple', 'Banana', 'Greek Yogurt'];
-                        setSelected(prev => [...new Set([...prev, ...sample])]);
+                        const samples = [
+                          { name: "Apple", quantity: 1, unit: "piece" },
+                          { name: "Banana", quantity: 1, unit: "piece" },
+                          { name: "Greek Yogurt", quantity: 1, unit: "cup" },
+                        ];
+                        setSelected((prev) => {
+                          const newItems = samples.filter(
+                            (s) => !prev.find((p) => p.name === s.name)
+                          );
+                          return [...prev, ...newItems];
+                        });
                       }}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -399,7 +762,10 @@ const MealTracking: React.FC = () => {
 
                 {/* Footer Actions */}
                 <div className="mt-8 flex items-center justify-between pt-6 border-t border-white/10">
-                  <p className="text-white/50 text-sm">Items will be saved to your meals for {isToday(currentDate) ? 'today' : formatDate(currentDate)}.</p>
+                  <p className="text-white/50 text-sm">
+                    Items will be saved to your meals for{" "}
+                    {isToday(currentDate) ? "today" : formatDate(currentDate)}.
+                  </p>
                   <div className="flex items-center gap-3">
                     <motion.button
                       onClick={() => setIsModalOpen(false)}
@@ -412,24 +778,62 @@ const MealTracking: React.FC = () => {
                     </motion.button>
                     <motion.button
                       onClick={() => {
-                        const itemsToAdd = selected.length > 0 ? selected : (query.trim() ? [query.trim()] : []);
-                        if (itemsToAdd.length > 0 && !addingMeal) addMeals(modalMealType, itemsToAdd);
+                        const itemsToAdd =
+                          selected.length > 0
+                            ? selected
+                            : query.trim()
+                              ? [
+                                  {
+                                    name: query.trim(),
+                                    quantity: 1,
+                                    unit: "serving",
+                                  },
+                                ]
+                              : [];
+                        if (itemsToAdd.length > 0 && !addingMeal)
+                          addMeals(modalMealType, itemsToAdd);
                       }}
-                      whileHover={!addingMeal ? { scale: 1.05, boxShadow: "0 10px 40px rgba(139, 92, 246, 0.4)" } : {}}
+                      whileHover={
+                        !addingMeal
+                          ? {
+                              scale: 1.05,
+                              boxShadow: "0 10px 40px rgba(139, 92, 246, 0.4)",
+                            }
+                          : {}
+                      }
                       whileTap={!addingMeal ? { scale: 0.95 } : {}}
                       disabled={addingMeal}
                       className="px-8 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
                     >
                       {addingMeal ? (
                         <>
-                          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          <svg
+                            className="animate-spin h-5 w-5"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
                           </svg>
                           <span>Adding...</span>
                         </>
                       ) : (
-                        <>Add {selected.length > 0 ? `(${selected.length})` : ''}</>
+                        <>
+                          Add{" "}
+                          {selected.length > 0 ? `(${selected.length})` : ""}
+                        </>
                       )}
                     </motion.button>
                   </div>

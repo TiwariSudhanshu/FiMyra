@@ -30,11 +30,58 @@ export interface IUser extends Document {
   profileCompleted?: boolean;
   meals?: {
     date?: Date;
-    breakfast?: string[];
-    lunch?: string[];
-    dinner?: string[];
-    snacks?: string[];
+    breakfast?: Array<{
+      name: string;
+      quantity?: number;
+      unit?: string;
+      carbs?: number;
+      protein?: number;
+      fat?: number;
+      fiber?: number;
+      calories?: number;
+    }>;
+    lunch?: Array<{
+      name: string;
+      quantity?: number;
+      unit?: string;
+      carbs?: number;
+      protein?: number;
+      fat?: number;
+      fiber?: number;
+      calories?: number;
+    }>;
+    dinner?: Array<{
+      name: string;
+      quantity?: number;
+      unit?: string;
+      carbs?: number;
+      protein?: number;
+      fat?: number;
+      fiber?: number;
+      calories?: number;
+    }>;
+    snacks?: Array<{
+      name: string;
+      quantity?: number;
+      unit?: string;
+      carbs?: number;
+      protein?: number;
+      fat?: number;
+      fiber?: number;
+      calories?: number;
+    }>;
   }[];
+  savedMeals?: string[];
+  recentMeals?: Array<{
+    name: string;
+    quantity?: number;
+    unit?: string;
+    carbs?: number;
+    protein?: number;
+    fat?: number;
+    fiber?: number;
+    calories?: number;
+  }>;
   // Password reset fields
   resetOTP?: string;
   resetOTPExpiry?: Date;
@@ -140,18 +187,59 @@ const UserSchema: Schema<IUser> = new Schema(
     }
     ,
     // Daily meals storage
-    meals: {
-      type: [
-        {
-          date: { type: Date, required: true },
-          breakfast: [String],
-          lunch: [String],
-          dinner: [String],
-          snacks: [String]
-        }
-      ],
-      default: []
-    },
+    meals: [{
+      date: { type: Date, required: true },
+      breakfast: [{
+        name: { type: String, required: true },
+        quantity: { type: Number, default: 1 },
+        unit: { type: String, default: 'serving' },
+        carbs: { type: Number },
+        protein: { type: Number },
+        fat: { type: Number },
+        fiber: { type: Number },
+        calories: { type: Number }
+      }],
+      lunch: [{
+        name: { type: String, required: true },
+        quantity: { type: Number, default: 1 },
+        unit: { type: String, default: 'serving' },
+        carbs: { type: Number },
+        protein: { type: Number },
+        fat: { type: Number },
+        fiber: { type: Number },
+        calories: { type: Number }
+      }],
+      dinner: [{
+        name: { type: String, required: true },
+        quantity: { type: Number, default: 1 },
+        unit: { type: String, default: 'serving' },
+        carbs: { type: Number },
+        protein: { type: Number },
+        fat: { type: Number },
+        fiber: { type: Number },
+        calories: { type: Number }
+      }],
+      snacks: [{
+        name: { type: String, required: true },
+        quantity: { type: Number, default: 1 },
+        unit: { type: String, default: 'serving' },
+        carbs: { type: Number },
+        protein: { type: Number },
+        fat: { type: Number },
+        fiber: { type: Number },
+        calories: { type: Number }
+      }]
+    }],
+    recentMeals: [{
+      name: { type: String, required: true },
+      quantity: { type: Number, default: 1 },
+      unit: { type: String, default: 'serving' },
+      carbs: { type: Number },
+      protein: { type: Number },
+      fat: { type: Number },
+      fiber: { type: Number },
+      calories: { type: Number }
+    }],
     // Password reset fields
     resetOTP: {
       type: String,
