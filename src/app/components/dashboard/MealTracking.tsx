@@ -51,7 +51,11 @@ const Chip: React.FC<{
   </motion.button>
 );
 
-const MealTracking: React.FC = () => {
+interface MealTrackingProps {
+  onMealAdded?: () => void;
+}
+
+const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [allMeals, setAllMeals] = useState<MealDay[]>([]);
   const [mealsData, setMealsData] = useState<MealDay | null>(null);
@@ -71,6 +75,11 @@ const MealTracking: React.FC = () => {
   const [savedMeals, setSavedMeals] = useState<string[]>([]);
   const [savingSavedMeal, setSavingSavedMeal] = useState(false);
   const [newSavedName, setNewSavedName] = useState("");
+  
+  // Water tracking state
+  const [waterIntake, setWaterIntake] = useState(0);
+  const [waterGoal, setWaterGoal] = useState(8);
+  const [updatingWater, setUpdatingWater] = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem("fimyra:recentMeals");
@@ -85,7 +94,13 @@ const MealTracking: React.FC = () => {
 
   useEffect(() => {
     fetchMeals();
+    fetchWaterIntake();
   }, []);
+  
+  useEffect(() => {
+    // Fetch water when date changes
+    fetchWaterIntake();
+  }, [currentDate]);
 
   useEffect(() => {
     // Update mealsData when currentDate changes
@@ -119,6 +134,57 @@ const MealTracking: React.FC = () => {
       setError(err?.message || "Failed to load");
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const fetchWaterIntake = async () => {
+    try {
+      const res = await fetch("/api/tracking/daily");
+      if (res.ok) {
+        const json = await res.json();
+        setWaterIntake(json.tracking?.waterIntake || 0);
+        setWaterGoal(json.tracking?.waterGoal || 8);
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch water intake:", err);
+    }
+  };
+  
+  const updateWater = async (newValue: number) => {
+    if (newValue < 0) return;
+    setUpdatingWater(true);
+    setWaterIntake(newValue);
+    
+    try {
+      const res = await fetch("/api/tracking/daily");
+      if (!res.ok) throw new Error("Failed to get tracking data");
+      const json = await res.json();
+      const tracking = json.tracking;
+      
+      // Update water intake
+      const updatedTracking = {
+        ...tracking,
+        waterIntake: newValue
+      };
+      
+      const updateRes = await fetch("/api/tracking/daily", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedTracking)
+      });
+      
+      if (!updateRes.ok) throw new Error("Failed to update water");
+      
+      // Notify parent to refresh overview
+      if (onMealAdded) {
+        onMealAdded();
+      }
+    } catch (err: any) {
+      console.error("Failed to update water:", err);
+      // Revert on error
+      await fetchWaterIntake();
+    } finally {
+      setUpdatingWater(false);
     }
   };
 
@@ -218,6 +284,11 @@ const MealTracking: React.FC = () => {
       setIsModalOpen(false);
       setSelected([]);
       setQuery("");
+      
+      // Notify parent component that meal was added
+      if (onMealAdded) {
+        onMealAdded();
+      }
     } catch (err: any) {
       setError(err?.message || "Add failed");
     } finally {
@@ -242,6 +313,11 @@ const MealTracking: React.FC = () => {
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message || "Failed to remove");
       await fetchMeals();
+      
+      // Notify parent component that meal was removed
+      if (onMealAdded) {
+        onMealAdded();
+      }
     } catch (err: any) {
       setError(err?.message || "Remove failed");
     }
@@ -324,6 +400,80 @@ const MealTracking: React.FC = () => {
           </motion.button>
         </div>
       </div>
+
+      {/* Water Intake Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-6 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-md rounded-2xl p-6 border border-blue-400/20 shadow-lg"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-500/30 to-cyan-500/30 rounded-xl flex items-center justify-center text-3xl shadow-lg">
+              💧
+            </div>
+            <div>
+              <h4 className="text-xl font-semibold text-white">Water Intake</h4>
+              <p className="text-white/60 text-sm">Stay hydrated throughout the day</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-white">
+              {waterIntake}<span className="text-white/50 text-xl">/{waterGoal}</span>
+            </div>
+            <p className="text-blue-400 text-sm font-medium">
+              {Math.round((waterIntake / waterGoal) * 100)}% Complete
+            </p>
+          </div>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="w-full bg-white/10 rounded-full h-3 mb-4 overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.min((waterIntake / waterGoal) * 100, 100)}%` }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"
+          />
+        </div>
+        
+        {/* Water Control Buttons */}
+        <div className="flex items-center justify-center gap-3">
+          <motion.button
+            onClick={() => updateWater(waterIntake - 1)}
+            disabled={waterIntake === 0 || updatingWater}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-6 py-2 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed border border-white/10 text-white font-semibold transition-all"
+          >
+            -1 Glass
+          </motion.button>
+          
+          <div className="px-4 py-2 bg-blue-500/20 rounded-xl border border-blue-400/30">
+            <span className="text-white/80 text-sm">Glasses</span>
+          </div>
+          
+          <motion.button
+            onClick={() => updateWater(waterIntake + 1)}
+            disabled={updatingWater}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-6 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-semibold shadow-lg shadow-blue-500/30 transition-all"
+          >
+            +1 Glass
+          </motion.button>
+          
+          <motion.button
+            onClick={() => updateWater(waterIntake + 2)}
+            disabled={updatingWater}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-6 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-cyan-500/30 transition-all"
+          >
+            +2 Glasses
+          </motion.button>
+        </div>
+      </motion.div>
 
       {loading ? (
         <div className="text-white/70 text-center py-8">

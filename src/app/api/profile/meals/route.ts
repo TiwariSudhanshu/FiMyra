@@ -236,6 +236,63 @@ export async function POST(req: Request) {
     // Mark the meals array as modified for Mongoose to track changes
     user.markModified('meals')
 
+    // 5. Update daily tracking with the added nutrients
+    const totalCalories = processedMeals.reduce((sum, meal) => sum + (meal.calories || 0), 0);
+    const totalProtein = processedMeals.reduce((sum, meal) => sum + (meal.protein || 0), 0);
+    const totalCarbs = processedMeals.reduce((sum, meal) => sum + (meal.carbs || 0), 0);
+    const totalFat = processedMeals.reduce((sum, meal) => sum + (meal.fat || 0), 0);
+
+    // Initialize dailyTracking if not exists
+    if (!user.dailyTracking) {
+      user.dailyTracking = [];
+    }
+
+    // Find today's tracking entry
+    let todayTracking = user.dailyTracking.find((day: any) => {
+      const trackingDate = new Date(day.date);
+      trackingDate.setHours(0, 0, 0, 0);
+      return trackingDate.getTime() === targetDate.getTime();
+    });
+
+    if (!todayTracking) {
+      // Create new tracking entry for the day
+      todayTracking = {
+        date: targetDate,
+        waterIntake: 0,
+        waterGoal: 8,
+        exerciseMinutes: 0,
+        exerciseGoal: 60,
+        caloriesConsumed: totalCalories,
+        caloriesGoal: 2000,
+        proteinConsumed: totalProtein,
+        proteinGoal: 150,
+        carbsConsumed: totalCarbs,
+        carbsGoal: 250,
+        fatConsumed: totalFat,
+        fatGoal: 65,
+        stepsCount: 0,
+        stepsGoal: 10000,
+        sleepHours: 0,
+        sleepGoal: 8,
+        completed: false
+      } as any;
+      user.dailyTracking.push(todayTracking);
+    } else {
+      // Update existing tracking entry
+      todayTracking.caloriesConsumed = (todayTracking.caloriesConsumed || 0) + totalCalories;
+      todayTracking.proteinConsumed = (todayTracking.proteinConsumed || 0) + totalProtein;
+      todayTracking.carbsConsumed = (todayTracking.carbsConsumed || 0) + totalCarbs;
+      todayTracking.fatConsumed = (todayTracking.fatConsumed || 0) + totalFat;
+      
+      // Check if all goals are met
+      todayTracking.completed = 
+        todayTracking.waterIntake >= todayTracking.waterGoal &&
+        todayTracking.exerciseMinutes >= todayTracking.exerciseGoal &&
+        todayTracking.caloriesConsumed <= todayTracking.caloriesGoal * 1.1;
+    }
+
+    user.markModified('dailyTracking');
+
     // Save everything atomically
     await user.save()
 
@@ -243,7 +300,13 @@ export async function POST(req: Request) {
       success: true, 
       message: 'Meal added', 
       meals: user.meals,
-      addedMeals: processedMeals 
+      addedMeals: processedMeals,
+      trackingUpdated: {
+        calories: totalCalories,
+        protein: totalProtein,
+        carbs: totalCarbs,
+        fat: totalFat
+      }
     })
   } catch (err: any) {
     console.error('Add meal error:', err)
@@ -309,8 +372,39 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ success: false, message: 'Item index out of range' }, { status: 400 })
     }
 
+    // Get nutrients from the meal being removed for tracking adjustment
+    const removedMeal = mealArray[itemIndex];
+    const removedCalories = removedMeal?.calories || 0;
+    const removedProtein = removedMeal?.protein || 0;
+    const removedCarbs = removedMeal?.carbs || 0;
+    const removedFat = removedMeal?.fat || 0;
+
     mealArray.splice(itemIndex, 1)
     dayEntry[mealType] = mealArray
+
+    // Update daily tracking by subtracting removed nutrients
+    if (user.dailyTracking) {
+      const todayTracking = user.dailyTracking.find((day: any) => {
+        const trackingDate = new Date(day.date);
+        trackingDate.setHours(0, 0, 0, 0);
+        return trackingDate.getTime() === targetDate.getTime();
+      });
+
+      if (todayTracking) {
+        todayTracking.caloriesConsumed = Math.max(0, (todayTracking.caloriesConsumed || 0) - removedCalories);
+        todayTracking.proteinConsumed = Math.max(0, (todayTracking.proteinConsumed || 0) - removedProtein);
+        todayTracking.carbsConsumed = Math.max(0, (todayTracking.carbsConsumed || 0) - removedCarbs);
+        todayTracking.fatConsumed = Math.max(0, (todayTracking.fatConsumed || 0) - removedFat);
+        
+        // Recheck completion status
+        todayTracking.completed = 
+          todayTracking.waterIntake >= todayTracking.waterGoal &&
+          todayTracking.exerciseMinutes >= todayTracking.exerciseGoal &&
+          todayTracking.caloriesConsumed <= todayTracking.caloriesGoal * 1.1;
+        
+        user.markModified('dailyTracking');
+      }
+    }
 
     await user.save()
 

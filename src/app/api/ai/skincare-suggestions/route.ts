@@ -39,7 +39,7 @@ async function getUserIdFromReq(req: Request | any) {
   return userId;
 }
 
-// POST - Get AI hair care suggestions
+// POST - Get AI skin care suggestions
 export async function POST(request: NextRequest) {
   try {
     const userId = await getUserIdFromReq(request);
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
 
-    const user = await User.findById(userId).select('hairCareProfile healthProfile name');
+    const user = await User.findById(userId).select('skinCareProfile healthProfile name');
     if (!user) {
       return NextResponse.json(
         { success: false, message: 'User not found' },
@@ -60,48 +60,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { hairCareProfile, healthProfile } = user;
+    const { skinCareProfile, healthProfile } = user;
     const age = healthProfile?.age || 'not specified';
     const gender = healthProfile?.gender || 'not specified';
 
-    // Only require hair type - other fields are optional
-    if (!hairCareProfile || !hairCareProfile.hairType) {
+    // Only require skin type - other fields are optional
+    if (!skinCareProfile || !skinCareProfile.skinType) {
       return NextResponse.json(
-        { success: false, message: 'Please select your hair type first. You can add more details for better recommendations!' },
+        { success: false, message: 'Please select your skin type first. You can add more details for better recommendations!' },
         { status: 400 }
       );
     }
 
     // Build prompt for AI
-    const prompt = `You are a professional hair care expert and trichologist. Provide personalized hair care recommendations based on the following profile:
+    const prompt = `You are a professional dermatologist and skin care expert. Provide personalized skin care recommendations based on the following profile:
 
 **User Profile:**
 - Age: ${age}
 - Gender: ${gender}
-- Hair Type: ${hairCareProfile.hairType}
-- Hair Concerns: ${hairCareProfile.concerns?.join(', ') || 'None specified'}
+- Skin Type: ${skinCareProfile.skinType}
+- Skin Concerns: ${skinCareProfile.concerns?.join(', ') || 'None specified'}
 - Current Routine:
-  * Wash Frequency: ${hairCareProfile.routine?.frequency || 'Not specified'}
-  * Shampoo: ${hairCareProfile.routine?.shampoo || 'Not specified'}
-  * Conditioner: ${hairCareProfile.routine?.conditioner || 'Not specified'}
-  * Treatments: ${hairCareProfile.routine?.treatments?.join(', ') || 'None'}
-- Hair Goals: ${hairCareProfile.goals?.join(', ') || 'General hair health'}
+  * Morning Routine: ${skinCareProfile.routine?.morning?.join(', ') || 'Not specified'}
+  * Evening Routine: ${skinCareProfile.routine?.evening?.join(', ') || 'Not specified'}
+  * Products Used: ${skinCareProfile.routine?.products?.join(', ') || 'Not specified'}
+- Skin Goals: ${skinCareProfile.goals?.join(', ') || 'General skin health'}
 
 **Please provide:**
-1. **Daily Care Routine** (2-3 specific actionable tips for daily hair care)
-2. **Weekly Treatments** (2-3 recommended weekly treatments or masks based on their concerns and hair type)
-3. **Product Recommendations** (3-4 specific product types or ingredients to look for based on their hair type and concerns)
-4. **Lifestyle Tips** (2-3 lifestyle or dietary suggestions that can improve hair health for someone of their age)
-5. **Common Mistakes** (2-3 things to avoid based on their current routine and hair type)
+1. **Morning Routine** (3-4 specific steps for morning skin care based on their skin type)
+2. **Evening Routine** (3-4 specific steps for evening skin care)
+3. **Product Recommendations** (4-5 specific product types or key ingredients to look for based on their skin type and concerns)
+4. **Lifestyle Tips** (2-3 lifestyle, diet, or habit suggestions that can improve skin health for someone of their age)
+5. **Common Mistakes** (2-3 things to avoid based on their skin type and current routine)
 
 **Format your response as a JSON object with these exact keys:**
-- dailyCare: array of strings (actionable tips)
-- weeklyTreatments: array of strings (treatment recommendations)
-- productRecommendations: array of strings (product suggestions)
-- lifestyleTips: array of strings (lifestyle advice)
+- morningRoutine: array of strings (morning care steps)
+- eveningRoutine: array of strings (evening care steps)
+- productRecommendations: array of strings (product suggestions with key ingredients)
+- lifestyleTips: array of strings (lifestyle and dietary advice)
 - avoidMistakes: array of strings (things to avoid)
 
-Keep each tip concise (1-2 sentences) and practical. Consider their age when making recommendations.
+Keep each tip concise (1-2 sentences) and practical. Consider their age and skin type when making recommendations.
 
 Return ONLY the JSON object, no other text.`;
 
@@ -133,31 +132,34 @@ Return ONLY the JSON object, no other text.`;
       console.error('Failed to parse AI response:', text);
       // Fallback suggestions
       suggestions = {
-        dailyCare: [
-          'Use a sulfate-free shampoo to maintain your hair\'s natural oils',
-          'Apply conditioner from mid-length to ends, avoiding the scalp',
-          'Gently detangle hair when wet using a wide-tooth comb'
+        morningRoutine: [
+          'Cleanse your face with a gentle, pH-balanced cleanser',
+          'Apply a vitamin C serum to brighten and protect',
+          'Moisturize with a lightweight, non-comedogenic moisturizer',
+          'Finish with broad-spectrum SPF 30+ sunscreen'
         ],
-        weeklyTreatments: [
-          'Apply a deep conditioning mask once a week for 20-30 minutes',
-          'Use a scalp massage with oil to improve blood circulation',
-          'Try a protein treatment if you have damaged or processed hair'
+        eveningRoutine: [
+          'Remove makeup and cleanse thoroughly',
+          'Use a toner to balance skin pH',
+          'Apply treatment serums (retinol, niacinamide, etc.)',
+          'Finish with a richer night cream or moisturizer'
         ],
         productRecommendations: [
-          'Look for products with argan oil or coconut oil for moisture',
-          'Use a heat protectant spray before styling with heat tools',
-          'Consider a leave-in conditioner for extra protection',
-          'Try silk or satin pillowcases to reduce friction'
+          'Look for hyaluronic acid for hydration',
+          'Use niacinamide to reduce inflammation and pores',
+          'Consider retinol for anti-aging (start slow)',
+          'Try ceramides to strengthen skin barrier',
+          'Use chemical exfoliants (AHA/BHA) 2-3 times per week'
         ],
         lifestyleTips: [
-          'Stay hydrated by drinking at least 8 glasses of water daily',
-          'Eat protein-rich foods like eggs, fish, and nuts for hair strength',
-          'Take biotin or vitamin E supplements after consulting your doctor'
+          'Drink at least 8 glasses of water daily for skin hydration',
+          'Get 7-8 hours of quality sleep for skin regeneration',
+          'Eat antioxidant-rich foods like berries, nuts, and green tea'
         ],
         avoidMistakes: [
-          'Avoid washing hair with very hot water - use lukewarm instead',
-          'Don\'t rub hair vigorously with a towel - pat dry gently',
-          'Minimize heat styling and always use a heat protectant when you do'
+          'Don\'t skip sunscreen - UV damage accelerates aging',
+          'Avoid over-exfoliating - it can damage your skin barrier',
+          'Don\'t use hot water - it strips natural oils from skin'
         ]
       };
     }
@@ -166,14 +168,14 @@ Return ONLY the JSON object, no other text.`;
       success: true,
       suggestions,
       profile: {
-        hairType: hairCareProfile.hairType,
-        concerns: hairCareProfile.concerns,
+        skinType: skinCareProfile.skinType,
+        concerns: skinCareProfile.concerns,
         age
       }
     });
 
   } catch (error) {
-    console.error('Error generating hair care suggestions:', error);
+    console.error('Error generating skin care suggestions:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to generate suggestions' },
       { status: 500 }

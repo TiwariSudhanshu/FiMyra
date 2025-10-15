@@ -48,19 +48,26 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
   }, []);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       // Fetch tracking data
       const trackingRes = await fetch('/api/tracking/daily');
       if (trackingRes.ok) {
         const trackingData = await trackingRes.json();
+        console.log('📊 Tracking data received:', trackingData.tracking);
         setTracking(trackingData.tracking);
+      } else {
+        console.error('Failed to fetch tracking data:', trackingRes.status);
       }
 
       // Fetch goal
       const goalRes = await fetch('/api/profile/goal');
       if (goalRes.ok) {
         const goalData = await goalRes.json();
+        console.log('🎯 Goal data received:', goalData.goal);
         setGoal(goalData.goal);
+      } else {
+        console.error('Failed to fetch goal data:', goalRes.status);
       }
     } catch (error) {
       console.error('Failed to fetch overview data:', error);
@@ -113,7 +120,8 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
     if (percentage >= 100) return 'from-green-500 to-emerald-500';
     if (percentage >= 75) return 'from-blue-500 to-purple-500';
     if (percentage >= 50) return 'from-yellow-500 to-orange-500';
-    return 'from-red-500 to-pink-500';
+    if (percentage > 0) return 'from-purple-500 to-blue-500';
+    return 'from-gray-500 to-gray-600'; // Show gray for 0%
   };
 
   if (loading) {
@@ -124,6 +132,9 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
     );
   }
 
+  // Debug: Log current tracking state
+  console.log('🔍 Current tracking state:', tracking);
+
   return (
     <div className="space-y-8">
       {/* Daily Targets Section */}
@@ -132,10 +143,23 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
         animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-br from-black/60 via-gray-900/40 to-black/60 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl"
       >
-        <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-          <span className="text-3xl">🎯</span>
-          Daily Targets {goal && <span className="text-sm text-purple-400">({goal.type.replace('-', ' ')})</span>}
-        </h3>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+            <span className="text-3xl">🎯</span>
+            Daily Targets {goal && <span className="text-sm text-purple-400">({goal.type.replace('-', ' ')})</span>}
+          </h3>
+          <motion.button
+            onClick={fetchData}
+            whileHover={{ scale: 1.1, rotate: 180 }}
+            whileTap={{ scale: 0.9 }}
+            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/30 text-white/70 hover:text-white transition-all"
+            title="Refresh data"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </motion.button>
+        </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Calories */}
@@ -146,8 +170,8 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
                 <div>
                   <p className="text-white/70 text-sm">Calories</p>
                   <p className="text-white text-2xl font-bold">
-                    {tracking?.caloriesConsumed || 0}
-                    <span className="text-white/50 text-base">/{tracking?.caloriesGoal || 2000}</span>
+                    {Math.round(tracking?.caloriesConsumed || 0)}
+                    <span className="text-white/50 text-base">/{Math.round(tracking?.caloriesGoal || 2000)}</span>
                   </p>
                 </div>
               </div>
@@ -155,11 +179,14 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
                 {Math.round(getProgressPercentage(tracking?.caloriesConsumed || 0, tracking?.caloriesGoal || 2000))}%
               </span>
             </div>
-            <div className="w-full bg-white/10 rounded-full h-2">
+            <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
               <motion.div
+                key={`calories-${tracking?.caloriesConsumed}`}
                 initial={{ width: 0 }}
                 animate={{ width: `${getProgressPercentage(tracking?.caloriesConsumed || 0, tracking?.caloriesGoal || 2000)}%` }}
-                className={`h-2 rounded-full bg-gradient-to-r ${getProgressColor(getProgressPercentage(tracking?.caloriesConsumed || 0, tracking?.caloriesGoal || 2000))}`}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className={`h-3 rounded-full bg-gradient-to-r ${getProgressColor(getProgressPercentage(tracking?.caloriesConsumed || 0, tracking?.caloriesGoal || 2000))}`}
+                style={{ minWidth: getProgressPercentage(tracking?.caloriesConsumed || 0, tracking?.caloriesGoal || 2000) > 0 ? '8px' : '0px' }}
               />
             </div>
           </div>
@@ -181,11 +208,14 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
                 {Math.round(getProgressPercentage(tracking?.proteinConsumed || 0, tracking?.proteinGoal || 150))}%
               </span>
             </div>
-            <div className="w-full bg-white/10 rounded-full h-2">
+            <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
               <motion.div
+                key={`protein-${tracking?.proteinConsumed}`}
                 initial={{ width: 0 }}
                 animate={{ width: `${getProgressPercentage(tracking?.proteinConsumed || 0, tracking?.proteinGoal || 150)}%` }}
-                className={`h-2 rounded-full bg-gradient-to-r ${getProgressColor(getProgressPercentage(tracking?.proteinConsumed || 0, tracking?.proteinGoal || 150))}`}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className={`h-3 rounded-full bg-gradient-to-r ${getProgressColor(getProgressPercentage(tracking?.proteinConsumed || 0, tracking?.proteinGoal || 150))}`}
+                style={{ minWidth: getProgressPercentage(tracking?.proteinConsumed || 0, tracking?.proteinGoal || 150) > 0 ? '8px' : '0px' }}
               />
             </div>
           </div>
@@ -207,11 +237,14 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
                 {Math.round(getProgressPercentage(tracking?.carbsConsumed || 0, tracking?.carbsGoal || 250))}%
               </span>
             </div>
-            <div className="w-full bg-white/10 rounded-full h-2">
+            <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
               <motion.div
+                key={`carbs-${tracking?.carbsConsumed}`}
                 initial={{ width: 0 }}
                 animate={{ width: `${getProgressPercentage(tracking?.carbsConsumed || 0, tracking?.carbsGoal || 250)}%` }}
-                className={`h-2 rounded-full bg-gradient-to-r ${getProgressColor(getProgressPercentage(tracking?.carbsConsumed || 0, tracking?.carbsGoal || 250))}`}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className={`h-3 rounded-full bg-gradient-to-r ${getProgressColor(getProgressPercentage(tracking?.carbsConsumed || 0, tracking?.carbsGoal || 250))}`}
+                style={{ minWidth: getProgressPercentage(tracking?.carbsConsumed || 0, tracking?.carbsGoal || 250) > 0 ? '8px' : '0px' }}
               />
             </div>
           </div>
@@ -233,11 +266,14 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
                 {Math.round(getProgressPercentage(tracking?.fatConsumed || 0, tracking?.fatGoal || 65))}%
               </span>
             </div>
-            <div className="w-full bg-white/10 rounded-full h-2">
+            <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
               <motion.div
+                key={`fat-${tracking?.fatConsumed}`}
                 initial={{ width: 0 }}
                 animate={{ width: `${getProgressPercentage(tracking?.fatConsumed || 0, tracking?.fatGoal || 65)}%` }}
-                className={`h-2 rounded-full bg-gradient-to-r ${getProgressColor(getProgressPercentage(tracking?.fatConsumed || 0, tracking?.fatGoal || 65))}`}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className={`h-3 rounded-full bg-gradient-to-r ${getProgressColor(getProgressPercentage(tracking?.fatConsumed || 0, tracking?.fatGoal || 65))}`}
+                style={{ minWidth: getProgressPercentage(tracking?.fatConsumed || 0, tracking?.fatGoal || 65) > 0 ? '8px' : '0px' }}
               />
             </div>
           </div>
@@ -262,11 +298,14 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
                 +1
               </button>
             </div>
-            <div className="w-full bg-white/10 rounded-full h-2">
+            <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
               <motion.div
+                key={`water-${tracking?.waterIntake}`}
                 initial={{ width: 0 }}
                 animate={{ width: `${getProgressPercentage(tracking?.waterIntake || 0, tracking?.waterGoal || 8)}%` }}
-                className={`h-2 rounded-full bg-gradient-to-r ${getProgressColor(getProgressPercentage(tracking?.waterIntake || 0, tracking?.waterGoal || 8))}`}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className={`h-3 rounded-full bg-gradient-to-r ${getProgressColor(getProgressPercentage(tracking?.waterIntake || 0, tracking?.waterGoal || 8))}`}
+                style={{ minWidth: getProgressPercentage(tracking?.waterIntake || 0, tracking?.waterGoal || 8) > 0 ? '8px' : '0px' }}
               />
             </div>
           </div>
@@ -288,11 +327,14 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
                 {Math.round(getProgressPercentage(tracking?.exerciseMinutes || 0, tracking?.exerciseGoal || 60))}%
               </span>
             </div>
-            <div className="w-full bg-white/10 rounded-full h-2">
+            <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
               <motion.div
+                key={`exercise-${tracking?.exerciseMinutes}`}
                 initial={{ width: 0 }}
                 animate={{ width: `${getProgressPercentage(tracking?.exerciseMinutes || 0, tracking?.exerciseGoal || 60)}%` }}
-                className={`h-2 rounded-full bg-gradient-to-r ${getProgressColor(getProgressPercentage(tracking?.exerciseMinutes || 0, tracking?.exerciseGoal || 60))}`}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className={`h-3 rounded-full bg-gradient-to-r ${getProgressColor(getProgressPercentage(tracking?.exerciseMinutes || 0, tracking?.exerciseGoal || 60))}`}
+                style={{ minWidth: getProgressPercentage(tracking?.exerciseMinutes || 0, tracking?.exerciseGoal || 60) > 0 ? '8px' : '0px' }}
               />
             </div>
           </div>

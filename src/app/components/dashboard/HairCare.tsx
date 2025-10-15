@@ -104,21 +104,17 @@ const HairCare: React.FC<HairCareProps> = () => {
   };
 
   const getAISuggestions = async () => {
+    // Only require hair type for AI suggestions
     if (!hairType) {
-      toast.error('Please select your hair type first');
-      return;
-    }
-
-    // Save profile first if not saved, then get suggestions
-    if (!hairType) {
-      toast.error('Please complete your hair profile');
+      toast.error('Please select your hair type first to get AI suggestions');
       return;
     }
 
     setLoadingAI(true);
     
-    // First, save the profile to ensure latest data
+    // Save the current profile data first (even if incomplete)
     try {
+      // Save whatever data we have and wait for it to complete
       const saveResponse = await fetch('/api/profile/haircare', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -133,20 +129,21 @@ const HairCare: React.FC<HairCareProps> = () => {
       });
 
       const saveData = await saveResponse.json();
+      
       if (!saveData.success) {
         toast.error(saveData.message || 'Failed to save profile');
         setLoadingAI(false);
         return;
       }
 
-      // Now get AI suggestions
+      // Profile saved successfully, now get AI suggestions
       const suggestionPromise = fetch('/api/ai/haircare-suggestions', {
         method: 'POST',
         credentials: 'include'
       }).then(res => res.json());
 
       toast.promise(suggestionPromise, {
-        loading: 'Generating AI recommendations... 🤖',
+        loading: 'Generating personalized AI recommendations... 🤖',
         success: (data) => {
           if (data.success) {
             setAiSuggestions(data.suggestions);
@@ -445,12 +442,13 @@ const HairCare: React.FC<HairCareProps> = () => {
       </div>
 
       {/* AI Recommendations */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {aiSuggestions && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
             className="bg-gradient-to-r from-pink-500/10 to-purple-500/10 backdrop-blur-sm rounded-2xl border border-pink-400/20 p-6"
           >
             <div className="flex items-center justify-between mb-6">
@@ -459,6 +457,15 @@ const HairCare: React.FC<HairCareProps> = () => {
                 AI Hair Care Recommendations
                 {age && <span className="text-sm text-gray-400 font-normal">(Based on age {age})</span>}
               </h3>
+              <button
+                onClick={() => setAiSuggestions(null)}
+                className="text-gray-400 hover:text-white transition-colors"
+                title="Close recommendations"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
             
             <div className="space-y-6">

@@ -50,7 +50,12 @@ interface Tab {
   component: React.ReactNode;
 }
 
-const getTabs = (user: User | null, onTabChange: (tab: TabId) => void): Tab[] => [
+const getTabs = (
+  user: User | null, 
+  onTabChange: (tab: TabId) => void,
+  overviewKey: number,
+  onMealUpdate: () => void
+): Tab[] => [
   {
     id: 'overview',
     label: 'Overview',
@@ -63,7 +68,7 @@ const getTabs = (user: User | null, onTabChange: (tab: TabId) => void): Tab[] =>
     component: user ? (
       <div className="space-y-8">
         <WelcomeSection userName={user.name} auraScore={85} />
-        <OverviewSection onTabChange={onTabChange} />
+        <OverviewSection key={overviewKey} onTabChange={onTabChange} />
       </div>
     ) : null
   },
@@ -95,7 +100,7 @@ const getTabs = (user: User | null, onTabChange: (tab: TabId) => void): Tab[] =>
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
       </svg>
     ),
-    component: <MealTracking />
+    component: <MealTracking onMealAdded={onMealUpdate} />
   },
   {
     id: 'coach',
@@ -145,7 +150,13 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [overviewKey, setOverviewKey] = useState(0); // Key to force re-render of overview
   const router = useRouter();
+
+  const handleMealUpdate = () => {
+    // Force re-render of overview section when meals are added/removed
+    setOverviewKey(prev => prev + 1);
+  };
 
   useEffect(() => {
     if (status === 'loading') return; // Still loading session
@@ -285,7 +296,7 @@ const Dashboard: React.FC = () => {
           <div className="mb-8">
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-2">
               <div className="flex flex-wrap gap-1">
-                {getTabs(user, setActiveTab).map((tab) => (
+                {getTabs(user, setActiveTab, overviewKey, handleMealUpdate).map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
@@ -307,7 +318,7 @@ const Dashboard: React.FC = () => {
 
           {/* Tab Content */}
           <div className="min-h-[600px]">
-            {getTabs(user, setActiveTab).map((tab) => (
+            {getTabs(user, setActiveTab, overviewKey, handleMealUpdate).map((tab) => (
               <div
                 key={tab.id}
                 className={`transition-all duration-300 ${
