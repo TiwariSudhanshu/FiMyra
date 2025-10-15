@@ -238,24 +238,24 @@ const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({
   };
 
   return (
-    <div className="lg:col-span-2 bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl">
-      <div className="flex items-center justify-between mb-8">
+    <div className="lg:col-span-2 bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-xl rounded-3xl p-4 sm:p-6 lg:p-8 border border-white/10 shadow-2xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h3 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+          <h3 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
             Nutrition Analytics
           </h3>
-          <p className="text-white/60 text-sm mt-1">Track your dietary patterns and nutrient intake</p>
+          <p className="text-white/60 text-xs sm:text-sm mt-1">Track your dietary patterns and nutrient intake</p>
         </div>
         
         {/* Time Range Selector */}
-        <div className="flex items-center gap-2 bg-white/5 backdrop-blur-md rounded-xl p-1 border border-white/10">
+        <div className="flex items-center gap-1 sm:gap-2 bg-white/5 backdrop-blur-md rounded-xl p-1 border border-white/10 w-full sm:w-auto">
           {(['daily', 'weekly', 'monthly'] as TimeRange[]).map((range) => (
             <motion.button
               key={range}
               onClick={() => setTimeRange(range)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                 timeRange === range
                   ? 'bg-gradient-to-r from-purple-500 to-blue-600 text-white shadow-lg'
                   : 'text-white/70 hover:text-white hover:bg-white/5'
@@ -279,70 +279,70 @@ const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({
           </div>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {/* Today's Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             <motion.div
               whileHover={{ y: -4, boxShadow: "0 20px 40px rgba(245, 158, 11, 0.15)" }}
-              className="bg-gradient-to-br from-orange-500/10 to-yellow-500/10 border border-orange-400/20 rounded-xl p-4"
+              className="bg-gradient-to-br from-orange-500/10 to-yellow-500/10 border border-orange-400/20 rounded-xl p-3 sm:p-4"
             >
-              <div className="text-2xl font-bold text-orange-400">{Math.round(todayData.totals.calories)}</div>
-              <p className="text-white/60 text-sm mt-1">Calories Today</p>
+              <div className="text-xl sm:text-2xl font-bold text-orange-400">{Math.round(todayData.totals.calories)}</div>
+              <p className="text-white/60 text-xs sm:text-sm mt-1">Calories Today</p>
             </motion.div>
             <motion.div
               whileHover={{ y: -4, boxShadow: "0 20px 40px rgba(139, 92, 246, 0.15)" }}
-              className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-400/20 rounded-xl p-4"
+              className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-400/20 rounded-xl p-3 sm:p-4"
             >
-              <div className="text-2xl font-bold text-purple-400">{Math.round(todayData.totals.protein)}g</div>
-              <p className="text-white/60 text-sm mt-1">Protein</p>
+              <div className="text-xl sm:text-2xl font-bold text-purple-400">{Math.round(todayData.totals.protein)}g</div>
+              <p className="text-white/60 text-xs sm:text-sm mt-1">Protein</p>
             </motion.div>
             <motion.div
               whileHover={{ y: -4, boxShadow: "0 20px 40px rgba(59, 130, 246, 0.15)" }}
-              className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-400/20 rounded-xl p-4"
+              className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-400/20 rounded-xl p-3 sm:p-4"
             >
-              <div className="text-2xl font-bold text-blue-400">{Math.round(todayData.totals.carbs)}g</div>
-              <p className="text-white/60 text-sm mt-1">Carbs</p>
+              <div className="text-xl sm:text-2xl font-bold text-blue-400">{Math.round(todayData.totals.carbs)}g</div>
+              <p className="text-white/60 text-xs sm:text-sm mt-1">Carbs</p>
             </motion.div>
             <motion.div
               whileHover={{ y: -4, boxShadow: "0 20px 40px rgba(16, 185, 129, 0.15)" }}
-              className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-400/20 rounded-xl p-4"
+              className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-400/20 rounded-xl p-3 sm:p-4"
             >
-              <div className="text-2xl font-bold text-green-400">{Math.round(todayData.totals.fat)}g</div>
-              <p className="text-white/60 text-sm mt-1">Fat</p>
+              <div className="text-xl sm:text-2xl font-bold text-green-400">{Math.round(todayData.totals.fat)}g</div>
+              <p className="text-white/60 text-xs sm:text-sm mt-1">Fat</p>
             </motion.div>
             <motion.div
               whileHover={{ y: -4, boxShadow: "0 20px 40px rgba(236, 72, 153, 0.15)" }}
-              className="bg-gradient-to-br from-pink-500/10 to-rose-500/10 border border-pink-400/20 rounded-xl p-4"
+              className="bg-gradient-to-br from-pink-500/10 to-rose-500/10 border border-pink-400/20 rounded-xl p-3 sm:p-4"
             >
-              <div className="text-2xl font-bold text-pink-400">{Math.round(todayData.totals.fiber)}g</div>
-              <p className="text-white/60 text-sm mt-1">Fiber</p>
+              <div className="text-xl sm:text-2xl font-bold text-pink-400">{Math.round(todayData.totals.fiber)}g</div>
+              <p className="text-white/60 text-xs sm:text-sm mt-1">Fiber</p>
             </motion.div>
           </div>
 
           {/* Charts Grid */}
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Calories Trend - Line Chart */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10"
+              className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-white/10"
             >
-              <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <span className="text-2xl">🔥</span> Calorie Trend
+              <h4 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                <span className="text-xl sm:text-2xl">🔥</span> Calorie Trend
               </h4>
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={analyticsData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
-                  <XAxis dataKey="date" stroke="#ffffff60" style={{ fontSize: '12px' }} />
-                  <YAxis stroke="#ffffff60" style={{ fontSize: '12px' }} />
+                  <XAxis dataKey="date" stroke="#ffffff60" style={{ fontSize: '10px' }} />
+                  <YAxis stroke="#ffffff60" style={{ fontSize: '10px' }} />
                   <Tooltip content={<CustomTooltip />} />
                   <Line 
                     type="monotone" 
                     dataKey="calories" 
                     stroke={COLORS.calories} 
-                    strokeWidth={3}
-                    dot={{ fill: COLORS.calories, r: 4 }}
-                    activeDot={{ r: 6 }}
+                    strokeWidth={2}
+                    dot={{ fill: COLORS.calories, r: 3 }}
+                    activeDot={{ r: 5 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -353,13 +353,13 @@ const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10"
+              className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-white/10"
             >
-              <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <span className="text-2xl">📊</span> Today's Macros
+              <h4 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                <span className="text-xl sm:text-2xl">📊</span> Today's Macros
               </h4>
               {todayData.pieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
+                <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
                     <Pie
                       data={todayData.pieData}
@@ -367,9 +367,10 @@ const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({
                       cy="50%"
                       labelLine={false}
                       label={({ name, value }) => `${name}: ${value}g`}
-                      outerRadius={80}
+                      outerRadius={70}
                       fill="#8884d8"
                       dataKey="value"
+                      style={{ fontSize: '11px' }}
                     >
                       {todayData.pieData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -379,7 +380,7 @@ const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex items-center justify-center h-[250px] text-white/40">
+                <div className="flex items-center justify-center h-[220px] text-white/40 text-sm">
                   No data for today
                 </div>
               )}
@@ -390,18 +391,18 @@ const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10"
+              className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-white/10"
             >
-              <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <span className="text-2xl">💪</span> Protein Intake
+              <h4 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                <span className="text-xl sm:text-2xl">💪</span> Protein Intake
               </h4>
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={analyticsData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
-                  <XAxis dataKey="date" stroke="#ffffff60" style={{ fontSize: '12px' }} />
-                  <YAxis stroke="#ffffff60" style={{ fontSize: '12px' }} />
+                  <XAxis dataKey="date" stroke="#ffffff60" style={{ fontSize: '10px' }} />
+                  <YAxis stroke="#ffffff60" style={{ fontSize: '10px' }} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="protein" fill={COLORS.protein} radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="protein" fill={COLORS.protein} radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </motion.div>
@@ -411,27 +412,29 @@ const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10"
+              className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-white/10 lg:col-span-2"
             >
-              <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <span className="text-2xl">🥗</span> Nutrient Comparison
+              <h4 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                <span className="text-xl sm:text-2xl">🥗</span> Nutrient Comparison
               </h4>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={analyticsData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
-                  <XAxis dataKey="date" stroke="#ffffff60" style={{ fontSize: '12px' }} />
-                  <YAxis stroke="#ffffff60" style={{ fontSize: '12px' }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend 
-                    wrapperStyle={{ fontSize: '12px' }}
-                    iconType="circle"
-                  />
-                  <Bar dataKey="protein" fill={COLORS.protein} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="carbs" fill={COLORS.carbs} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="fat" fill={COLORS.fat} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="fiber" fill={COLORS.fiber} radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="overflow-x-auto -mx-2 px-2">
+                <ResponsiveContainer width="100%" height={220} minWidth={300}>
+                  <BarChart data={analyticsData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
+                    <XAxis dataKey="date" stroke="#ffffff60" style={{ fontSize: '10px' }} />
+                    <YAxis stroke="#ffffff60" style={{ fontSize: '10px' }} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend 
+                      wrapperStyle={{ fontSize: '10px' }}
+                      iconType="circle"
+                    />
+                    <Bar dataKey="protein" fill={COLORS.protein} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="carbs" fill={COLORS.carbs} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="fat" fill={COLORS.fat} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="fiber" fill={COLORS.fiber} radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </motion.div>
           </div>
         </div>

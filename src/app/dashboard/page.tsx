@@ -173,6 +173,7 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [overviewKey, setOverviewKey] = useState(0); // Key to force re-render of overview
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
 
   const handleMealUpdate = () => {
@@ -278,21 +279,24 @@ const Dashboard: React.FC = () => {
       
       {/* Header */}
       <header className="relative z-10 bg-black/20 backdrop-blur-md shadow-2xl border-b border-white/10">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-4 sm:px-6 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-400 rounded-lg flex items-center justify-center">
-                <div className="w-5 h-5 bg-white rounded opacity-90"></div>
+            {/* Logo */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-400 to-purple-400 rounded-lg flex items-center justify-center">
+                <div className="w-4 h-4 sm:w-5 sm:h-5 bg-white rounded opacity-90"></div>
               </div>
-              <Link href="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 hover:from-blue-300 hover:to-purple-300 transition-all">
+              <Link href="/" className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 hover:from-blue-300 hover:to-purple-300 transition-all">
                 FiMyra
               </Link>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-white/80">Welcome, {user.name}!</span>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-3 lg:space-x-4">
+              <span className="text-white/80 text-sm lg:text-base hidden lg:inline">Welcome, {user.name}!</span>
               <Link
                 href="/profile"
-                className="w-10 h-10 rounded-full border-2 border-blue-400/50 hover:border-blue-400 transition-all overflow-hidden"
+                className="w-9 h-9 lg:w-10 lg:h-10 rounded-full border-2 border-blue-400/50 hover:border-blue-400 transition-all overflow-hidden"
               >
                 <img
                   src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=3b82f6&color=fff&size=40`}
@@ -302,12 +306,77 @@ const Dashboard: React.FC = () => {
               </Link>
               <button 
                 onClick={handleLogout}
-                className="bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 hover:border-red-400/50 text-red-300 hover:text-red-200 px-4 py-2 rounded-full transition-all backdrop-blur-sm"
+                className="bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 hover:border-red-400/50 text-red-300 hover:text-red-200 px-3 py-1.5 lg:px-4 lg:py-2 rounded-full transition-all backdrop-blur-sm text-sm lg:text-base"
               >
                 Logout
               </button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+              aria-label="Toggle menu"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {mobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
           </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-4 pt-4 border-t border-white/10 space-y-4">
+              {/* User Info */}
+              <div className="flex items-center gap-3 pb-4 border-b border-white/10">
+                <Link
+                  href="/profile"
+                  className="w-10 h-10 rounded-full border-2 border-blue-400/50 hover:border-blue-400 transition-all overflow-hidden"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <img
+                    src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=3b82f6&color=fff&size=40`}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                </Link>
+                <div>
+                  <p className="text-white font-medium">{user.name}</p>
+                  <p className="text-white/60 text-sm">{user.email}</p>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="flex flex-col gap-2">
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-3 text-white/90 hover:text-white hover:bg-white/10 px-4 py-3 rounded-lg transition-all"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span>View Profile</span>
+                </Link>
+                <button 
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex items-center gap-3 text-red-300 hover:text-red-200 hover:bg-red-500/20 px-4 py-3 rounded-lg transition-all"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -316,7 +385,8 @@ const Dashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           {/* Tab Navigation */}
           <div className="mb-8">
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-2">
+            {/* Desktop Navigation */}
+            <div className="hidden lg:block bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-2">
               <div className="flex flex-wrap gap-1">
                 {getTabs(user, setActiveTab, overviewKey, handleMealUpdate).map((tab) => (
                   <button
@@ -332,6 +402,30 @@ const Dashboard: React.FC = () => {
                       {tab.icon}
                     </span>
                     {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Mobile/Tablet Navigation - Icons Grid */}
+            <div className="lg:hidden bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-3">
+              <div className="grid grid-cols-5 gap-2">
+                {getTabs(user, setActiveTab, overviewKey, handleMealUpdate).map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl font-medium text-xs transition-all duration-200 ${
+                      activeTab === tab.id
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <span className={`transition-transform ${activeTab === tab.id ? 'scale-110' : ''}`}>
+                      {tab.icon}
+                    </span>
+                    <span className="text-[10px] leading-tight text-center hidden sm:block">
+                      {tab.label}
+                    </span>
                   </button>
                 ))}
               </div>
