@@ -183,21 +183,10 @@ const Dashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    if (status === 'loading') return; // Still loading session
-    
-    if (status === 'unauthenticated') {
-      router.push('/login?redirect=/dashboard');
-      return;
-    }
-
-    if (status === 'authenticated' && session?.user) {
-      // If user is authenticated with NextAuth (Google OAuth), fetch profile
-      fetchUserData();
-    } else {
-      // Try to fetch user data for local auth users
-      fetchUserData();
-    }
-  }, [status, session]);
+    // Always try to fetch user data first (works for both NextAuth and JWT auth)
+    // Only redirect to login if the fetch fails
+    fetchUserData();
+  }, []);
 
   const fetchUserData = async () => {
     try {
@@ -243,7 +232,7 @@ const Dashboard: React.FC = () => {
 
 
 
-  if (loading || status === 'loading') {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
