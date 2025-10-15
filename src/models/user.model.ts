@@ -152,6 +152,55 @@ export interface IUser extends Document {
     notes?: string;
     updatedAt?: Date;
   };
+  // Skin Care Daily Tracking
+  skinCareTracking?: Array<{
+    date: Date;
+    morningRoutineCompleted: boolean;
+    eveningRoutineCompleted: boolean;
+    notes?: string;
+  }>;
+  // Hair Care Tracking (wash reminders and completion)
+  hairCareTracking?: Array<{
+    date: Date;
+    washScheduled: boolean;
+    washCompleted: boolean;
+    skipped: boolean;
+    notes?: string;
+  }>;
+  // Next scheduled hair wash date
+  nextHairWashDate?: Date;
+  // Aura Score (overall wellness score 0-100)
+  auraScore?: number;
+  auraScoreHistory?: Array<{
+    score: number;
+    date: Date;
+    breakdown: {
+      nutrition: number;
+      activity: number;
+      consistency: number;
+      routines: number;
+      goals: number;
+    };
+  }>;
+  lastAuraUpdate?: Date;
+  // Daily Habits Tracker
+  dailyHabits?: Array<{
+    date: Date;
+    habits: {
+      exercised: boolean;
+      ateHealthy: boolean;
+      drankWater: boolean;
+      sleptWell: boolean;
+      tookVitamins: boolean;
+      meditated: boolean;
+      stretched: boolean;
+      journaled: boolean;
+      skinCareRoutine: boolean;
+      hairCareRoutine: boolean;
+    };
+    completionRate: number; // Percentage of habits completed
+    notes?: string;
+  }>;
   // Password reset fields
   resetOTP?: string;
   resetOTPExpiry?: Date;
@@ -387,6 +436,60 @@ const UserSchema: Schema<IUser> = new Schema(
       notes: { type: String },
       updatedAt: { type: Date, default: Date.now }
     },
+    // Skin Care Daily Tracking
+    skinCareTracking: [{
+      date: { type: Date, required: true },
+      morningRoutineCompleted: { type: Boolean, default: false },
+      eveningRoutineCompleted: { type: Boolean, default: false },
+      notes: { type: String }
+    }],
+    // Hair Care Tracking (wash reminders and completion)
+    hairCareTracking: [{
+      date: { type: Date, required: true },
+      washScheduled: { type: Boolean, default: false },
+      washCompleted: { type: Boolean, default: false },
+      skipped: { type: Boolean, default: false },
+      notes: { type: String }
+    }],
+    // Next scheduled hair wash date
+    nextHairWashDate: { type: Date },
+    // Aura Score (overall wellness score 0-100)
+    auraScore: { 
+      type: Number, 
+      min: 0, 
+      max: 100,
+      default: 0 
+    },
+    auraScoreHistory: [{
+      score: { type: Number, required: true },
+      date: { type: Date, default: Date.now },
+      breakdown: {
+        nutrition: { type: Number, default: 0 },
+        activity: { type: Number, default: 0 },
+        consistency: { type: Number, default: 0 },
+        routines: { type: Number, default: 0 },
+        goals: { type: Number, default: 0 }
+      }
+    }],
+    lastAuraUpdate: { type: Date },
+    // Daily Habits Tracker
+    dailyHabits: [{
+      date: { type: Date, required: true },
+      habits: {
+        exercised: { type: Boolean, default: false },
+        ateHealthy: { type: Boolean, default: false },
+        drankWater: { type: Boolean, default: false },
+        sleptWell: { type: Boolean, default: false },
+        tookVitamins: { type: Boolean, default: false },
+        meditated: { type: Boolean, default: false },
+        stretched: { type: Boolean, default: false },
+        journaled: { type: Boolean, default: false },
+        skinCareRoutine: { type: Boolean, default: false },
+        hairCareRoutine: { type: Boolean, default: false }
+      },
+      completionRate: { type: Number, default: 0 },
+      notes: { type: String }
+    }],
     // Password reset fields
     resetOTP: {
       type: String,

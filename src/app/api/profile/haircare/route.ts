@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
-    const user = await User.findById(userId).select('hairCareProfile healthProfile');
+    const user = await User.findById(userId).select('hairCareProfile healthProfile nextHairWashDate');
     if (!user) {
       return NextResponse.json(
         { success: false, message: 'User not found' },
@@ -59,10 +59,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Check if wash is due today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const nextWashDate = user.nextHairWashDate;
+    const isWashDueToday = nextWashDate && new Date(nextWashDate).setHours(0, 0, 0, 0) === today.getTime();
+    const isWashOverdue = nextWashDate && new Date(nextWashDate) < today;
+
     return NextResponse.json({
       success: true,
       hairCareProfile: user.hairCareProfile || null,
-      age: user.healthProfile?.age || null
+      age: user.healthProfile?.age || null,
+      nextWashDate: nextWashDate || null,
+      isWashDueToday,
+      isWashOverdue
     });
 
   } catch (error) {
@@ -72,6 +82,44 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Helper function to calculate next wash date based on frequency
+function calculateNextWashDate(frequency: string, lastWashDate?: Date): Date {
+  const today = lastWashDate || new Date();
+  const nextDate = new Date(today);
+  nextDate.setHours(0, 0, 0, 0);
+
+  switch (frequency.toLowerCase()) {
+    case 'daily':
+      nextDate.setDate(nextDate.getDate() + 1);
+      break;
+    case 'every-other-day':
+    case 'alternate days':
+      nextDate.setDate(nextDate.getDate() + 2);
+      break;
+    case 'twice-a-week':
+    case 'twice a week':
+      nextDate.setDate(nextDate.getDate() + 3);
+      break;
+    case 'weekly':
+    case 'once-a-week':
+    case 'once a week':
+      nextDate.setDate(nextDate.getDate() + 7);
+      break;
+    case 'twice-a-month':
+    case 'twice a month':
+      nextDate.setDate(nextDate.getDate() + 14);
+      break;
+    case 'monthly':
+    case 'once-a-month':
+      nextDate.setDate(nextDate.getDate() + 30);
+      break;
+    default:
+      nextDate.setDate(nextDate.getDate() + 7);
+  }
+
+  return nextDate;
 }
 
 // POST - Save/Update hair care profile
@@ -98,28 +146,7 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      {
-        $set: {
-          hairCareProfile: {
-            hairType,
-            concerns: concerns || [],
-            routine: {
-              shampoo: routine?.shampoo || '',
-              conditioner: routine?.conditioner || '',
-              treatments: routine?.treatments || [],
-              frequency: routine?.frequency || ''
-            },
-            goals: goals || [],
-            notes: notes || '',
-            updatedAt: new Date()
-          }
-        }
-      },
-      { new: true, runValidators: true }
-    ).select('hairCareProfile');
-
+    const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json(
         { success: false, message: 'User not found' },
@@ -127,10 +154,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Update hair care profile
+    user.hairCareProfile = {
+      hairType,
+      concerns: concerns || [],
+      routine: {
+        shampoo: routine?.shampoo || '',
+        conditioner: routine?.conditioner || '',
+        treatments: routine?.treatments || [],
+        frequency: routine?.frequency || ''
+      },
+      goals: goals || [],
+      notes: notes || '',
+      updatedAt: new Date()
+    } as any;
+
+    // If frequency is provided, calculate next wash date
+    if (routine?.frequency) {
+      // Find the last completed wash
+      const lastCompletedWash = user.hairCareTracking
+        ?.filter((t: any) => t.washCompleted)
+        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+
+      user.nextHairWashDate = calculateNextWashDate(
+        routine.frequency,
+        lastCompletedWash?.date
+      );
+    }
+
+    await user.save();
+
     return NextResponse.json({
       success: true,
       message: 'Hair care profile saved successfully',
-      hairCareProfile: user.hairCareProfile
+      hairCareProfile: user.hairCareProfile,
+      nextWashDate: user.nextHairWashDate
     });
 
   } catch (error) {
