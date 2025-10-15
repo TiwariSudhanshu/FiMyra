@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Menu, X } from "lucide-react"
 
 type HeaderProps = {}
@@ -19,9 +20,13 @@ const Header: React.FC<HeaderProps> = () => {
             href="/"
             className="text-xl font-bold text-white hover:text-white/80 transition-colors duration-200 flex items-center gap-2"
           >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-              <span className="text-white text-sm font-bold">F</span>
-            </div>
+            <Image 
+              src="/logo.png" 
+              alt="FiMyra Logo" 
+              width={32}
+              height={32}
+              className="rounded-lg object-contain"
+            />
             FiMyra
           </Link>
 

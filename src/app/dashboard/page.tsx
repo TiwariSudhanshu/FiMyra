@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import Image from 'next/image';
 import WelcomeSection from '../components/dashboard/WelcomeSection';
 import AnalyticsOverview from '../components/dashboard/AnalyticsOverview';
 import QuickStats from '../components/dashboard/QuickStats';
@@ -283,9 +284,13 @@ const Dashboard: React.FC = () => {
           <div className="flex justify-between items-center">
             {/* Logo */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-400 to-purple-400 rounded-lg flex items-center justify-center">
-                <div className="w-4 h-4 sm:w-5 sm:h-5 bg-white rounded opacity-90"></div>
-              </div>
+              <Image 
+                src="/logo.png" 
+                alt="FiMyra Logo" 
+                width={32}
+                height={32}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain"
+              />
               <Link href="/" className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 hover:from-blue-300 hover:to-purple-300 transition-all">
                 FiMyra
               </Link>
