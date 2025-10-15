@@ -40,7 +40,7 @@ const HeroSection: React.FC<HeroSectionProps> = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 z-0">
-        {/* <LiquidEther
+        <LiquidEther
           colors={["#5227FF", "#FF9FFC", "#B19EEF"]}
           mouseForce={20}
           cursorSize={100}
@@ -56,7 +56,7 @@ const HeroSection: React.FC<HeroSectionProps> = () => {
           takeoverDuration={0.25}
           autoResumeDelay={3000}
           autoRampDuration={0.6}
-        /> */}
+        />
       </div>
 
       <div className="relative z-10 container mx-auto px-6 py-12">
