@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 
@@ -94,9 +95,13 @@ const SignupPage: React.FC = () => {
             <div className="hidden lg:flex lg:flex-1 items-center justify-center px-8 xl:px-12">
               <div className="text-center">
                 <div className="flex items-center justify-center gap-4 mb-8">
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-blue-400 rounded-2xl flex items-center justify-center shadow-2xl">
-                    <div className="w-10 h-10 bg-white rounded-xl opacity-90"></div>
-                  </div>
+                  <Image 
+                    src="/logo.png" 
+                    alt="FiMyra Logo" 
+                    width={64}
+                    height={64}
+                    className="rounded-2xl shadow-2xl"
+                  />
                   <Link href="/" className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
                     FiMyra
                   </Link>
@@ -116,9 +121,13 @@ const SignupPage: React.FC = () => {
             {/* Mobile Logo */}
             <div className="lg:hidden text-center mb-8">
               <div className="inline-flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-blue-400 rounded-xl flex items-center justify-center">
-                  <div className="w-7 h-7 bg-white rounded opacity-90"></div>
-                </div>
+                <Image 
+                  src="/logo.png" 
+                  alt="FiMyra Logo" 
+                  width={48}
+                  height={48}
+                  className="rounded-xl"
+                />
                 <Link href="/" className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
                   FiMyra
                 </Link>

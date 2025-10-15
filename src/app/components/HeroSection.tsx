@@ -67,12 +67,12 @@ const HeroSection: React.FC<HeroSectionProps> = () => {
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-white">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight text-white px-4">
             Your Aura. Your Algorithm.
           </h1>
 
           {/* Description */}
-          <p className="text-lg md:text-xl lg:text-2xl leading-relaxed text-white/80 max-w-3xl">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl leading-relaxed text-white/80 max-w-3xl px-4">
             FiMyra decodes your moods, habits, and nutrition into one powerful Aura Score — helping you understand
             yourself better, vibe smarter, and glow from within.
           </p>
