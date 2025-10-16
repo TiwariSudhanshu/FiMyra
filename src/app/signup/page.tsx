@@ -16,6 +16,10 @@ const SignupPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [verifying, setVerifying] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,13 +29,13 @@ const SignupPage: React.FC = () => {
     setSuccess('');
 
     if (formData.password !== formData.confirmPassword) {
-  setError("Passwords don't match");
-  setLoading(false);
-  return;
-}
-
+      setError("Passwords don't match");
+      setLoading(false);
+      return;
+    }
 
     try {
+      // DIRECT REGISTRATION - OTP COMMENTED OUT
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -45,16 +49,131 @@ const SignupPage: React.FC = () => {
         setSuccess('Account created successfully! Redirecting to dashboard...');
         setTimeout(() => {
           router.push('/dashboard');
-        }, 2000);
+        }, 1500);
       } else {
         setError(data.message || 'Registration failed');
       }
+
+      /* OTP VERIFICATION - COMMENTED OUT FOR NOW
+      // Send OTP to email
+      const response = await fetch('/api/auth/verify/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: formData.email, 
+          name: formData.name 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccess('OTP sent to your email! Please check your inbox.');
+        setShowOtpModal(true);
+      } else {
+        setError(data.message || 'Failed to send OTP');
+      }
+      */
     } catch (error) {
       setError('Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  // OTP VERIFICATION FUNCTION - DISABLED (empty function for TypeScript)
+  const handleVerifyOtp = async () => {
+    return; // OTP verification disabled
+  };
+  
+  /* ORIGINAL OTP FUNCTION - COMMENTED OUT
+  const handleVerifyOtpOriginal = async () => {
+    if (!otp || otp.length !== 6) {
+      setOtpError('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    setVerifying(true);
+    setOtpError('');
+
+    try {
+      // Verify OTP
+      const verifyResponse = await fetch('/api/auth/verify/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: formData.email, 
+          otp 
+        }),
+      });
+
+      const verifyData = await verifyResponse.json();
+
+      if (verifyData.success) {
+        // OTP verified, now register the user
+        const registerResponse = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(formData),
+        });
+
+        const registerData = await registerResponse.json();
+
+        if (registerData.success) {
+          setSuccess('Account created successfully! Redirecting to dashboard...');
+          setTimeout(() => {
+            router.push('/dashboard');
+          }, 2000);
+        } else {
+          setOtpError(registerData.message || 'Registration failed');
+        }
+      } else {
+        setOtpError(verifyData.message || 'Invalid OTP');
+      }
+    } catch (error) {
+      setOtpError('Verification failed. Please try again.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+  */
+
+  // RESEND OTP FUNCTION - DISABLED (empty function for TypeScript)
+  const handleResendOtp = async () => {
+    return; // Resend OTP disabled
+  };
+  
+  /* ORIGINAL RESEND FUNCTION - COMMENTED OUT
+  const handleResendOtpOriginal = async () => {
+    setLoading(true);
+    setOtpError('');
+
+    try {
+      const response = await fetch('/api/auth/verify/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: formData.email, 
+          name: formData.name 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setOtp('');
+        setSuccess('New OTP sent to your email!');
+      } else {
+        setOtpError(data.message || 'Failed to resend OTP');
+      }
+    } catch (error) {
+      setOtpError('Failed to resend OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  */
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -311,6 +430,123 @@ const SignupPage: React.FC = () => {
         </div>
       </div>
     </div>
+
+    {/* OTP Verification Modal - COMMENTED OUT FOR NOW */}
+    {false && showOtpModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="relative bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 border border-white/20 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+          <button
+            onClick={() => setShowOtpModal(false)}
+            className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-2">Verify Your Email</h3>
+            <p className="text-white/70 text-sm">
+              We've sent a 6-digit code to<br />
+              <span className="font-semibold text-purple-400">{formData.email}</span>
+            </p>
+          </div>
+
+          {otpError && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-400/30 rounded-lg text-red-300 text-sm">
+              {otpError}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2 text-center">
+                Enter OTP Code
+              </label>
+              <div className="flex gap-2 justify-center">
+                {[0, 1, 2, 3, 4, 5].map((index) => (
+                  <input
+                    key={index}
+                    id={`otp-${index}`}
+                    type="text"
+                    maxLength={1}
+                    value={otp[index] || ''}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      if (value) {
+                        const newOtp = otp.split('');
+                        newOtp[index] = value;
+                        setOtp(newOtp.join(''));
+                        
+                        // Auto-focus next input
+                        if (index < 5) {
+                          document.getElementById(`otp-${index + 1}`)?.focus();
+                        }
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Backspace') {
+                        const newOtp = otp.split('');
+                        if (!otp[index] && index > 0) {
+                          // If current box is empty, go to previous box
+                          document.getElementById(`otp-${index - 1}`)?.focus();
+                        } else {
+                          // Clear current box
+                          newOtp[index] = '';
+                          setOtp(newOtp.join(''));
+                        }
+                      }
+                    }}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+                      setOtp(pastedData);
+                      if (pastedData.length === 6) {
+                        document.getElementById('otp-5')?.focus();
+                      } else if (pastedData.length > 0) {
+                        document.getElementById(`otp-${Math.min(pastedData.length, 5)}`)?.focus();
+                      }
+                    }}
+                    className="w-12 h-14 sm:w-14 sm:h-16 bg-white/10 border-2 border-white/20 placeholder-white/50 text-white text-center text-2xl font-bold rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400 focus:bg-white/15 transition-all backdrop-blur-sm"
+                  />
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={handleVerifyOtp}
+              disabled={verifying || otp.length !== 6}
+              className="w-full py-4 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            >
+              {verifying ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Verifying...
+                </div>
+              ) : (
+                'Verify & Create Account'
+              )}
+            </button>
+
+            <div className="text-center">
+              <p className="text-white/60 text-sm mb-2">Didn't receive the code?</p>
+              <button
+                onClick={handleResendOtp}
+                disabled={loading}
+                className="text-purple-400 hover:text-purple-300 font-medium text-sm transition-colors disabled:opacity-50"
+              >
+                Resend OTP
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   );
 };

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import NextAuthProvider from "./components/NextAuthProvider";
+import PWARegister from "./components/PWARegister";
 import { Toaster } from "sonner";
 
 const geistSans = Geist({
@@ -19,6 +20,19 @@ export const metadata: Metadata = {
   description: "Track your health and nutrition effortlessly",
   icons: {
     icon: '/logo.png',
+  },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'FiMyra',
+  },
+  themeColor: '#667eea',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
   },
 };
 
@@ -48,6 +62,7 @@ export default function RootLayout({
             JavaScript is required to run FiMyra. Please enable JavaScript in your browser.
           </div>
         </noscript>
+        <PWARegister />
         <NextAuthProvider>
           {children}
         </NextAuthProvider>

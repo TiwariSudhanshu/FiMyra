@@ -172,13 +172,13 @@ const GoalsSection: React.FC = () => {
   };
 
   const openEditGoal = () => {
-    if (!goal) return;
+    if (!goal || !goal.type) return;
     
     setIsEditMode(true);
     setGoalType(goal.type);
-    setCurrentWeight(goal.currentWeight.toString());
-    setTargetWeight(goal.targetWeight.toString());
-    setDuration(goal.duration.toString());
+    setCurrentWeight(goal.currentWeight?.toString() || '');
+    setTargetWeight(goal.targetWeight?.toString() || '');
+    setDuration(goal.duration?.toString() || '');
     setShowGoalModal(true);
   };
 
@@ -288,17 +288,21 @@ const GoalsSection: React.FC = () => {
   };
 
   const calculateProgress = () => {
-    if (!goal || !profile?.weight) return 0;
+    if (!goal || !profile?.weight || !goal.targetWeight || !goal.currentWeight) return 0;
     
     const totalChange = goal.targetWeight - goal.currentWeight;
     const currentChange = profile.weight - goal.currentWeight;
+    
+    // Prevent division by zero
+    if (totalChange === 0) return 0;
+    
     const progress = (currentChange / totalChange) * 100;
     
     return Math.min(Math.max(progress, 0), 100);
   };
 
   const getWeeksRemaining = () => {
-    if (!goal) return 0;
+    if (!goal || !goal.startDate || !goal.duration) return 0;
     
     const startDate = new Date(goal.startDate);
     const now = new Date();
@@ -347,18 +351,18 @@ const GoalsSection: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`bg-gradient-to-br ${getGoalColor(goal.type)} bg-opacity-10 backdrop-blur-md rounded-2xl p-6 border border-white/20`}
+              className={`bg-gradient-to-br ${getGoalColor(goal.type || 'maintenance')} bg-opacity-10 backdrop-blur-md rounded-2xl p-6 border border-white/20`}
             >
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="text-4xl">{getGoalIcon(goal.type)}</span>
+                    <span className="text-4xl">{getGoalIcon(goal.type || 'maintenance')}</span>
                     <div>
                       <h4 className="text-xl font-bold text-white capitalize">
-                        {goal.type?.replace('-', ' ')}
+                        {goal.type?.replace('-', ' ') || 'No Type'}
                       </h4>
                       <p className="text-white/70 text-sm">
-                        {goal.currentWeight}kg → {goal.targetWeight}kg
+                        {goal.currentWeight || 0}kg → {goal.targetWeight || 0}kg
                       </p>
                     </div>
                   </div>
@@ -387,7 +391,7 @@ const GoalsSection: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div className="bg-white/5 rounded-lg p-3">
-                  <div className="text-lg font-bold text-white">{goal.currentWeight}kg</div>
+                  <div className="text-lg font-bold text-white">{goal.currentWeight || 0}kg</div>
                   <p className="text-white/60 text-xs">Start</p>
                 </div>
                 <div className="bg-white/5 rounded-lg p-3">
@@ -395,7 +399,7 @@ const GoalsSection: React.FC = () => {
                   <p className="text-white/60 text-xs">Current</p>
                 </div>
                 <div className="bg-white/5 rounded-lg p-3">
-                  <div className="text-lg font-bold text-white">{goal.targetWeight}kg</div>
+                  <div className="text-lg font-bold text-white">{goal.targetWeight || 0}kg</div>
                   <p className="text-white/60 text-xs">Target</p>
                 </div>
               </div>

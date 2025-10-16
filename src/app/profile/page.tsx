@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import InstallPWAButton from '../components/InstallPWAButton';
 
 interface HealthProfile {
   height?: number;
@@ -430,6 +431,11 @@ const ProfilePage: React.FC = () => {
                     )}
                   </div>
                 </div>
+              </div>
+
+              {/* Install App Section */}
+              <div className="mt-6">
+                <InstallPWAButton />
               </div>
             </div>
           )}
