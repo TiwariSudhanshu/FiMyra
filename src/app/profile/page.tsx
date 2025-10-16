@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import InstallPWAButton from '../components/InstallPWAButton';
 
 interface HealthProfile {
@@ -212,9 +213,13 @@ const ProfilePage: React.FC = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-blue-400 rounded-lg flex items-center justify-center">
-                <div className="w-5 h-5 bg-white rounded opacity-90"></div>
-              </div>
+              <Image 
+                src="/logo.png" 
+                alt="FiMyra Logo" 
+                width={32}
+                height={32}
+                className="rounded-lg"
+              />
               <Link href="/dashboard" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 hover:from-purple-300 hover:to-blue-300 transition-all">
                 FiMyra
               </Link>
@@ -389,7 +394,7 @@ const ProfilePage: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-white/60">Hair Type:</span>
-                      <span className="text-white">{formData.hairType || 'Not set'}</span>
+                      <span className="text-white bg-black">{formData.hairType || 'Not set'}</span>
                     </div>
                     {formData.hairConcerns.length > 0 && (
                       <div>
@@ -541,7 +546,7 @@ const ProfilePage: React.FC = () => {
                   name="gender"
                   value={formData.gender}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 focus:bg-white/15 transition-all backdrop-blur-sm"
+                  className="w-full px-4 py-3 bg-black border border-white/20 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 focus:bg-gray-900 transition-all"
                 >
                   <option value="">Select Gender</option>
                   <option value="male">Male</option>
@@ -559,7 +564,7 @@ const ProfilePage: React.FC = () => {
                 name="activityLevel"
                 value={formData.activityLevel}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 focus:bg-white/15 transition-all backdrop-blur-sm"
+                className="w-full px-4 py-3 bg-black border border-white/20 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 focus:bg-gray-900 transition-all [&>option]:bg-black [&>option]:text-white"
               >
                 <option value="">Select Activity Level</option>
                 <option value="sedentary">Sedentary (little/no exercise)</option>
@@ -620,7 +625,7 @@ const ProfilePage: React.FC = () => {
                     name="hairType"
                     value={formData.hairType}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-pink-400/50 focus:bg-white/15 transition-all backdrop-blur-sm"
+                    className="w-full px-4 py-3 bg-black border border-white/20 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-pink-400/50 focus:bg-gray-900 transition-all [&>option]:bg-black [&>option]:text-white"
                   >
                     <option value="">Select Hair Type</option>
                     <option value="straight">Straight (Type 1)</option>
@@ -663,7 +668,7 @@ const ProfilePage: React.FC = () => {
                     name="skinType"
                     value={formData.skinType}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400/50 focus:border-rose-400/50 focus:bg-white/15 transition-all backdrop-blur-sm"
+                    className="w-full px-4 py-3 bg-black border border-white/20 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400/50 focus:border-rose-400/50 focus:bg-gray-900 transition-all [&>option]:bg-black [&>option]:text-white"
                   >
                     <option value="">Select Skin Type</option>
                     <option value="normal">Normal</option>
