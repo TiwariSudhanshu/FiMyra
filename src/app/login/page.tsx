@@ -12,7 +12,42 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const router = useRouter();
+
+  // Check for saved credentials on mount
+  React.useEffect(() => {
+    const checkRememberedUser = async () => {
+      const rememberedUser = localStorage.getItem('rememberedUser');
+      if (rememberedUser) {
+        const { email } = JSON.parse(rememberedUser);
+        
+        // Try auto-login with saved token
+        try {
+          const response = await fetch('/api/auth/me', {
+            method: 'GET',
+            credentials: 'include',
+          });
+          const data = await response.json();
+          
+          if (data.success) {
+            // User is still authenticated, redirect to dashboard
+            router.push('/dashboard');
+          } else {
+            // Token expired, pre-fill email
+            setFormData(prev => ({ ...prev, email }));
+            setRememberMe(true);
+          }
+        } catch (error) {
+          // Pre-fill email if available
+          setFormData(prev => ({ ...prev, email }));
+          setRememberMe(true);
+        }
+      }
+    };
+    
+    checkRememberedUser();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +65,16 @@ const LoginPage: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
+        // Save user info to localStorage if Remember Me is checked
+        if (rememberMe) {
+          localStorage.setItem('rememberedUser', JSON.stringify({
+            email: formData.email,
+            timestamp: new Date().toISOString()
+          }));
+        } else {
+          localStorage.removeItem('rememberedUser');
+        }
+        
         // Get redirect URL from query params or default to dashboard
         const urlParams = new URLSearchParams(window.location.search);
         const redirect = urlParams.get('redirect') || '/dashboard';
@@ -207,6 +252,8 @@ const LoginPage: React.FC = () => {
                       id="remember-me"
                       name="remember-me"
                       type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-700 rounded"
                     />
                     <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-300">

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { formatMarkdownToJSX } from '@/utils/markdownFormatter';
 
 interface ChatMessage {
   id: string;
@@ -206,7 +207,9 @@ const AIChatInline: React.FC<AIChatInlineProps> = ({
                   ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg' 
                   : 'bg-white/10 backdrop-blur-sm text-white border border-white/10'
               }`}>
-                <p className="text-sm leading-relaxed">{message.text}</p>
+                <div className="text-sm leading-relaxed">
+                  {message.sender === 'ai' ? formatMarkdownToJSX(message.text) : message.text}
+                </div>
                 <p className="text-xs mt-2 opacity-70">
                   {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>

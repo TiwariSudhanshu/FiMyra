@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 type MealItem = {
   name: string;
@@ -127,11 +128,23 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
     setError(null);
     try {
       const res = await fetch("/api/profile/meals");
-      if (!res.ok) throw new Error("Unable to fetch meals");
+      if (!res.ok) {
+        throw new Error("Unable to fetch meals");
+      }
       const json = await res.json();
-      setAllMeals(json.meals || []);
+      
+      if (json.success && Array.isArray(json.meals)) {
+        setAllMeals(json.meals);
+      } else {
+        console.warn("Invalid meals response:", json);
+        setAllMeals([]);
+      }
     } catch (err: any) {
-      setError(err?.message || "Failed to load");
+      console.error("Fetch meals error:", err);
+      const errorMessage = err?.message || "Failed to load meals";
+      setError(errorMessage);
+      // Don't show toast on initial load failure, just log it
+      console.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -266,7 +279,14 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
     type: "breakfast" | "lunch" | "dinner" | "snacks",
     items: Array<{ name: string; quantity: number; unit: string }>
   ) => {
+    if (!items || items.length === 0) {
+      toast.error("Please add at least one meal item");
+      return;
+    }
+
     setAddingMeal(true);
+    setError(null);
+    
     try {
       const res = await fetch("/api/profile/meals", {
         method: "POST",
@@ -277,20 +297,41 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
           date: currentDate.toISOString(),
         }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.message || "Failed to add");
-      await fetchMeals();
-      saveRecent(items.map((i) => i.name));
-      setIsModalOpen(false);
-      setSelected([]);
-      setQuery("");
       
-      // Notify parent component that meal was added
-      if (onMealAdded) {
-        onMealAdded();
+      const json = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(json?.message || "Failed to add meal");
+      }
+
+      // Update meals data immediately
+      if (json.success && json.meals) {
+        setAllMeals(json.meals);
+        
+        // Show success toast
+        const mealNames = items.map(i => i.name).join(", ");
+        toast.success(`✅ Added to ${type}: ${mealNames}`);
+        
+        // Save to recent meals
+        saveRecent(items.map((i) => i.name));
+        
+        // Reset modal state
+        setIsModalOpen(false);
+        setSelected([]);
+        setQuery("");
+        
+        // Notify parent component
+        if (onMealAdded) {
+          onMealAdded();
+        }
+      } else {
+        throw new Error("Invalid response from server");
       }
     } catch (err: any) {
-      setError(err?.message || "Add failed");
+      console.error("Add meal error:", err);
+      const errorMessage = err?.message || "Failed to add meal";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setAddingMeal(false);
     }
@@ -310,16 +351,30 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
           date: currentDate.toISOString(),
         }),
       });
+      
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.message || "Failed to remove");
-      await fetchMeals();
+      
+      if (!res.ok) {
+        throw new Error(json?.message || "Failed to remove meal");
+      }
+
+      // Update meals data immediately
+      if (json.success && json.meals) {
+        setAllMeals(json.meals);
+        toast.success("🗑️ Meal removed successfully");
+      } else {
+        throw new Error("Invalid response from server");
+      }
       
       // Notify parent component that meal was removed
       if (onMealAdded) {
         onMealAdded();
       }
     } catch (err: any) {
-      setError(err?.message || "Remove failed");
+      console.error("Remove meal error:", err);
+      const errorMessage = err?.message || "Failed to remove meal";
+      setError(errorMessage);
+      toast.error(errorMessage);
     }
   };
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { formatMarkdownToJSX } from '@/utils/markdownFormatter';
 
 interface AIHealthCoachProps {
   userName?: string;
@@ -32,100 +33,9 @@ const AIHealthCoach: React.FC<AIHealthCoachProps> = ({ userName = 'User' }) => {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  // Convert simple markdown-like text to JSX: supports headings (##), unordered lists (- or *), and numbered lists (1.)
+  // Render message text with proper markdown formatting
   const renderMessageText = (text: string) => {
-    const lines = text.split(/\r?\n/);
-  const elements: React.ReactNode[] = [];
-    let listBuffer: string[] | null = null;
-    let listType: 'ul' | 'ol' | null = null;
-
-    const flushList = () => {
-      if (!listBuffer || !listType) return;
-      if (listType === 'ul') {
-        elements.push(
-          <ul className="list-disc pl-5 mt-2 mb-2 text-sm text-white/90" key={elements.length}>
-            {listBuffer.map((item, i) => (
-              <li key={i} className="mb-1">{item}</li>
-            ))}
-          </ul>
-        );
-      } else {
-        elements.push(
-          <ol className="list-decimal pl-5 mt-2 mb-2 text-sm text-white/90" key={elements.length}>
-            {listBuffer.map((item, i) => (
-              <li key={i} className="mb-1">{item}</li>
-            ))}
-          </ol>
-        );
-      }
-      listBuffer = null;
-      listType = null;
-    };
-
-    for (let rawLine of lines) {
-      const line = rawLine.trim();
-      if (!line) {
-        // blank line -> flush list and add spacing
-        flushList();
-        elements.push(<div key={elements.length} className="my-2" />);
-        continue;
-      }
-
-      // Heading level 2
-      if (line.startsWith('## ')) {
-        flushList();
-        elements.push(
-          <h3 key={elements.length} className="text-lg font-semibold text-white mb-2">{line.replace(/^##\s+/, '')}</h3>
-        );
-        continue;
-      }
-
-      // Heading level 3
-      if (line.startsWith('### ')) {
-        flushList();
-        elements.push(
-          <h4 key={elements.length} className="text-sm font-semibold text-white/95 mb-2">{line.replace(/^###\s+/, '')}</h4>
-        );
-        continue;
-      }
-
-      // Unordered list
-      if (/^[-*]\s+/.test(line)) {
-        const item = line.replace(/^[-*]\s+/, '');
-        if (listType === 'ol') {
-          // flush previous ordered list
-          flushList();
-        }
-        listType = 'ul';
-        listBuffer = listBuffer ?? [];
-        listBuffer.push(item);
-        continue;
-      }
-
-      // Ordered list (e.g., 1. )
-      if (/^\d+\.\s+/.test(line)) {
-        const item = line.replace(/^\d+\.\s+/, '');
-        if (listType === 'ul') {
-          flushList();
-        }
-        listType = 'ol';
-        listBuffer = listBuffer ?? [];
-        listBuffer.push(item);
-        continue;
-      }
-
-      // Regular paragraph line
-      flushList();
-      elements.push(
-        <p key={elements.length} className="text-sm text-white/90 leading-relaxed mb-2">
-          {line}
-        </p>
-      );
-    }
-
-    // flush any trailing list
-    flushList();
-    return elements;
+    return formatMarkdownToJSX(text);
   };
 
   const handleSendMessage = async () => {

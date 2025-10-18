@@ -1,10 +1,14 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import Link from 'next/link';
+import WaitlistModal from './WaitlistModal';
 
 interface FooterProps {}
 
 const Footer: React.FC<FooterProps> = () => {
   const currentYear = new Date().getFullYear();
+  const [showWaitlistModal, setShowWaitlistModal] = useState(false);
   
   return (
     <footer className="relative bg-gradient-to-br from-black via-gray-900 to-black text-white overflow-hidden">
@@ -39,8 +43,13 @@ const Footer: React.FC<FooterProps> = () => {
                   type="email" 
                   placeholder="Enter your email" 
                   className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-full text-white placeholder-white/50 focus:outline-none focus:border-purple-400/50 focus:bg-white/15 transition-all backdrop-blur-sm"
+                  onClick={() => setShowWaitlistModal(true)}
+                  readOnly
                 />
-                <button className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white font-semibold px-6 py-3 rounded-full transition-all duration-300 transform hover:scale-105 whitespace-nowrap">
+                <button 
+                  onClick={() => setShowWaitlistModal(true)}
+                  className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white font-semibold px-6 py-3 rounded-full transition-all duration-300 transform hover:scale-105 whitespace-nowrap"
+                >
                   Join Waitlist
                 </button>
               </div>
@@ -154,6 +163,12 @@ const Footer: React.FC<FooterProps> = () => {
         {/* Bottom Gradient Line */}
         <div className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600"></div>
       </div>
+
+      {/* Waitlist Modal */}
+      <WaitlistModal 
+        isOpen={showWaitlistModal} 
+        onClose={() => setShowWaitlistModal(false)} 
+      />
     </footer>
   );
 };

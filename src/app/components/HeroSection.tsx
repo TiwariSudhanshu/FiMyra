@@ -85,7 +85,10 @@ const HeroSection: React.FC<HeroSectionProps> = () => {
               {isAuthenticated ? "Go to Dashboard" : "Begin Your Aura Journey"}
             </button>
 
-            <button className="border-2 border-white/40 hover:border-white/60 bg-transparent hover:bg-white/10 text-white font-semibold px-8 py-4 rounded-full text-base md:text-lg transition-all duration-200 backdrop-blur-sm min-w-[180px]">
+            <button 
+              onClick={() => router.push('/learn-more')}
+              className="border-2 border-white/40 hover:border-white/60 bg-transparent hover:bg-white/10 text-white font-semibold px-8 py-4 rounded-full text-base md:text-lg transition-all duration-200 backdrop-blur-sm min-w-[180px]"
+            >
               Learn More
             </button>
           </div>

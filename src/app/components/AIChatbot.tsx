@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { formatMarkdownToJSX } from '@/utils/markdownFormatter';
 
 interface ChatMessage {
   id: string;
@@ -138,7 +139,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                   ? 'bg-blue-600 text-white' 
                   : 'bg-gray-700 text-gray-100'
               }`}>
-                <p className="text-sm">{message.text}</p>
+                <div className="text-sm">
+                  {message.sender === 'ai' ? formatMarkdownToJSX(message.text) : message.text}
+                </div>
                 <p className="text-xs mt-1 opacity-70">
                   {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>

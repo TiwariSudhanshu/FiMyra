@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 type GoalType = 'weight-loss' | 'weight-gain' | 'muscle-gain' | 'maintenance' | null;
 type ActivityLevel = 'sedentary' | 'lightly-active' | 'moderately-active' | 'very-active' | 'extremely-active';
@@ -184,7 +185,33 @@ const GoalsSection: React.FC = () => {
 
   const saveGoal = async () => {
     if (!goalType || !currentWeight || !targetWeight || !duration) {
-      alert('Please fill all fields');
+      toast.error('Please fill all fields');
+      return;
+    }
+
+    const currentWeightValue = parseFloat(currentWeight);
+    const targetWeightValue = parseFloat(targetWeight);
+    const durationValue = parseInt(duration);
+
+    // Validation
+    if (currentWeightValue <= 0 || targetWeightValue <= 0) {
+      toast.error('Please enter valid weights');
+      return;
+    }
+
+    if (durationValue < 1 || durationValue > 52) {
+      toast.error('Duration must be between 1 and 52 weeks');
+      return;
+    }
+
+    // Check if goal makes sense
+    if (goalType === 'weight-loss' && targetWeightValue >= currentWeightValue) {
+      toast.error('Target weight should be less than current weight for weight loss');
+      return;
+    }
+
+    if ((goalType === 'weight-gain' || goalType === 'muscle-gain') && targetWeightValue <= currentWeightValue) {
+      toast.error('Target weight should be more than current weight for weight gain');
       return;
     }
 
@@ -192,9 +219,9 @@ const GoalsSection: React.FC = () => {
     try {
       const newGoal: Goal = {
         type: goalType,
-        currentWeight: parseFloat(currentWeight),
-        targetWeight: parseFloat(targetWeight),
-        duration: parseInt(duration),
+        currentWeight: currentWeightValue,
+        targetWeight: targetWeightValue,
+        duration: durationValue,
         startDate: isEditMode && goal ? goal.startDate : new Date().toISOString()
       };
 
@@ -205,19 +232,24 @@ const GoalsSection: React.FC = () => {
       });
 
       if (res.ok) {
-        setGoal(newGoal);
+        const data = await res.json();
+        setGoal(data.goal || newGoal);
+        
         if (profile) {
-          calculateDailyTargets(profile, newGoal);
+          calculateDailyTargets(profile, data.goal || newGoal);
         }
+        
+        toast.success(isEditMode ? '✅ Goal updated successfully!' : '🎯 Goal set successfully!');
         setShowGoalModal(false);
         setIsEditMode(false);
         resetForm();
       } else {
-        alert('Failed to save goal');
+        const errorData = await res.json();
+        toast.error(errorData.message || 'Failed to save goal');
       }
     } catch (error) {
       console.error('Error saving goal:', error);
-      alert('Failed to save goal');
+      toast.error('Failed to save goal. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -225,7 +257,13 @@ const GoalsSection: React.FC = () => {
 
   const updateProgress = async () => {
     if (!newWeight || !goal) {
-      alert('Please enter your current weight');
+      toast.error('Please enter your current weight');
+      return;
+    }
+
+    const weightValue = parseFloat(newWeight);
+    if (weightValue <= 0) {
+      toast.error('Please enter a valid weight');
       return;
     }
 
@@ -238,22 +276,47 @@ const GoalsSection: React.FC = () => {
         body: JSON.stringify({
           healthProfile: {
             ...profile,
-            weight: parseFloat(newWeight)
+            weight: weightValue
           }
         })
       });
 
       if (res.ok) {
-        // Refresh profile data
-        await fetchProfileAndGoal();
+        const data = await res.json();
+        
+        // Update local state with new weight
+        setProfile(data.healthProfile);
+        
+        // Recalculate targets with updated weight
+        if (goal) {
+          calculateDailyTargets(data.healthProfile, goal);
+        }
+        
+        // Show success message
+        const weightDiff = weightValue - (profile?.weight || 0);
+        const isImprovement = 
+          (goal.type === 'weight-loss' && weightDiff < 0) ||
+          (goal.type === 'weight-gain' && weightDiff > 0) ||
+          (goal.type === 'muscle-gain' && weightDiff > 0);
+        
+        if (isImprovement) {
+          toast.success(`🎉 Great progress! Weight updated to ${weightValue}kg`);
+        } else {
+          toast.info(`📊 Progress updated: ${weightValue}kg`);
+        }
+        
         setShowProgressModal(false);
         setNewWeight('');
+        
+        // Refresh the complete profile data
+        await fetchProfileAndGoal();
       } else {
-        alert('Failed to update progress');
+        const errorData = await res.json();
+        toast.error(errorData.message || 'Failed to update progress');
       }
     } catch (error) {
       console.error('Error updating progress:', error);
-      alert('Failed to update progress');
+      toast.error('Failed to update progress. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -706,25 +769,48 @@ const GoalsSection: React.FC = () => {
                       type="number"
                       value={newWeight}
                       onChange={(e) => setNewWeight(e.target.value)}
-                      placeholder="Enter your current weight"
+                      placeholder={profile?.weight?.toString() || "Enter your current weight"}
                       className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
                       step="0.1"
+                      min="0"
                     />
                     {profile?.weight && (
                       <p className="text-white/50 text-xs mt-2">
                         Previous: {profile.weight}kg
                       </p>
                     )}
+                    {newWeight && parseFloat(newWeight) > 0 && profile?.weight && (
+                      <p className={`text-xs mt-1 ${
+                        parseFloat(newWeight) < profile.weight 
+                          ? 'text-green-400' 
+                          : parseFloat(newWeight) > profile.weight 
+                          ? 'text-blue-400' 
+                          : 'text-white/60'
+                      }`}>
+                        {parseFloat(newWeight) < profile.weight 
+                          ? `📉 ${(profile.weight - parseFloat(newWeight)).toFixed(1)}kg lost`
+                          : parseFloat(newWeight) > profile.weight 
+                          ? `📈 ${(parseFloat(newWeight) - profile.weight).toFixed(1)}kg gained`
+                          : 'No change'}
+                      </p>
+                    )}
                   </div>
 
                   <motion.button
                     onClick={updateProgress}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    disabled={!newWeight || parseFloat(newWeight) <= 0}
+                    whileHover={!saving ? { scale: 1.02 } : {}}
+                    whileTap={!saving ? { scale: 0.98 } : {}}
+                    disabled={saving || !newWeight || parseFloat(newWeight) <= 0}
                     className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white rounded-xl font-semibold shadow-lg shadow-purple-500/30 transition-all"
                   >
-                    Save Progress
+                    {saving ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                        Saving...
+                      </div>
+                    ) : (
+                      'Save Progress'
+                    )}
                   </motion.button>
                 </div>
               </motion.div>

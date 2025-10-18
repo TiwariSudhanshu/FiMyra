@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { formatMarkdownToJSX } from '@/utils/markdownFormatter';
 
 interface Message {
   id: string;
@@ -143,7 +144,9 @@ const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                       : 'bg-white/10 text-gray-200 rounded-bl-md border border-white/10'
                   }`}
                 >
-                  <p className="text-sm leading-relaxed">{message.text}</p>
+                  <div className="text-sm leading-relaxed">
+                    {message.isUser ? message.text : formatMarkdownToJSX(message.text)}
+                  </div>
                   <span className="text-xs opacity-70 mt-1 block">
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
