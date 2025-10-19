@@ -56,6 +56,7 @@ interface AnalyticsOverviewProps {
     sleep: string;
     hydration: string;
   };
+  refreshTrigger?: number; // Add refresh trigger prop
 }
 
 const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({ 
@@ -64,22 +65,26 @@ const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({
     calories: '1,847',
     sleep: '6.5h',
     hydration: '94%'
-  }
+  },
+  refreshTrigger = 0
 }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('daily');
   const [meals, setMeals] = useState<MealDay[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('📊 AnalyticsOverview: refreshTrigger changed to', refreshTrigger);
     fetchMeals();
-  }, []);
+  }, [refreshTrigger]); // Re-fetch when refreshTrigger changes
 
   const fetchMeals = async () => {
+    console.log('📊 AnalyticsOverview: Fetching meals data...');
     setLoading(true);
     try {
       const res = await fetch('/api/profile/meals');
       if (res.ok) {
         const json = await res.json();
+        console.log('📊 Analytics: Fetched meals data:', json.meals?.length || 0, 'days');
         setMeals(json.meals || []);
       }
     } catch (error) {

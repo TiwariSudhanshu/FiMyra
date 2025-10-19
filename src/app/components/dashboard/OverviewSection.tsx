@@ -44,10 +44,12 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('📊 OverviewSection mounted/re-mounted, fetching data...');
     fetchData();
   }, []);
 
   const fetchData = async () => {
+    console.log('📊 OverviewSection: Starting fetchData...');
     setLoading(true);
     try {
       // Fetch tracking data
@@ -73,6 +75,7 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
       console.error('Failed to fetch overview data:', error);
     } finally {
       setLoading(false);
+      console.log('📊 OverviewSection: fetchData complete');
     }
   };
 

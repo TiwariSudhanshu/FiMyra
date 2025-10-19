@@ -113,6 +113,27 @@ const DailyHabits: React.FC<DailyHabitsProps> = () => {
     loadHabits();
   }, [selectedDate]);
 
+  // Check for 100% completion milestone
+  useEffect(() => {
+    if (completionRate === 100 && isToday() && Object.keys(habits).length > 0) {
+      // Check if at least one habit is actually completed (not default empty state)
+      const anyCompleted = Object.values(habits).some(Boolean);
+      if (anyCompleted) {
+        // Add milestone activity only once per day
+        fetch('/api/tracking/activities', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'milestone',
+            title: `🏆 Perfect Day Achievement!`,
+            description: `Completed all ${Object.keys(habits).length} daily habits`,
+            icon: '🎉'
+          })
+        }).catch(err => console.error('Failed to add milestone:', err));
+      }
+    }
+  }, [completionRate]);
+
   const loadHabits = async () => {
     try {
       const dateStr = selectedDate.toISOString().split('T')[0];
@@ -167,6 +188,22 @@ const DailyHabits: React.FC<DailyHabitsProps> = () => {
         // Revert on failure
         setHabits(habits);
         setCompletionRate(completionRate);
+      } else if (newValue) {
+        // Habit was marked as completed - add to activity feed
+        const habitConfig = habitConfigs.find(h => h.key === habitKey);
+        if (habitConfig && isToday()) {
+          // Only add activity for today's habits
+          await fetch('/api/tracking/activities', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'target_achieved',
+              title: `🔥 Habit Completed!`,
+              description: `${habitConfig.label.replace('Did you ', '').replace('?', '')}`,
+              icon: habitConfig.icon
+            })
+          }).catch(err => console.error('Failed to add activity:', err));
+        }
       }
     } catch (error) {
       console.error('Error toggling habit:', error);

@@ -288,13 +288,17 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
     setError(null);
     
     try {
+      // Use a date string that's consistent with the backend
+      const dateForAPI = new Date(currentDate);
+      dateForAPI.setHours(0, 0, 0, 0);
+      
       const res = await fetch("/api/profile/meals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mealType: type,
           items,
-          date: currentDate.toISOString(),
+          date: dateForAPI.toISOString(),
         }),
       });
       
@@ -306,11 +310,33 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
 
       // Update meals data immediately
       if (json.success && json.meals) {
+        console.log("✅ Meals updated from API:", json.meals);
         setAllMeals(json.meals);
         
-        // Show success toast
+        // Force update mealsData for current date
+        const targetDate = new Date(currentDate);
+        targetDate.setHours(0, 0, 0, 0);
+        const updatedDayMeals = json.meals.find((d: any) => {
+          const dt = new Date(d.date);
+          dt.setHours(0, 0, 0, 0);
+          return dt.getTime() === targetDate.getTime();
+        });
+        
+        if (updatedDayMeals) {
+          console.log("📅 Setting meals data for current date:", updatedDayMeals);
+          setMealsData(updatedDayMeals);
+        }
+        
+        // Show success toast with nutrient info
         const mealNames = items.map(i => i.name).join(", ");
-        toast.success(`✅ Added to ${type}: ${mealNames}`);
+        const addedMeals = json.addedMeals || items;
+        const totalCalories = addedMeals.reduce((sum: number, m: any) => sum + (m.calories || 0), 0);
+        
+        if (totalCalories > 0) {
+          toast.success(`✅ Added to ${type}: ${mealNames} (${Math.round(totalCalories)} cal)`);
+        } else {
+          toast.success(`✅ Added to ${type}: ${mealNames}`);
+        }
         
         // Save to recent meals
         saveRecent(items.map((i) => i.name));
@@ -321,14 +347,17 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
         setQuery("");
         
         // Notify parent component
+        console.log('🔄 Calling onMealAdded callback to refresh overview & analytics');
         if (onMealAdded) {
           onMealAdded();
+        } else {
+          console.warn('⚠️ onMealAdded callback not provided');
         }
       } else {
         throw new Error("Invalid response from server");
       }
     } catch (err: any) {
-      console.error("Add meal error:", err);
+      console.error("❌ Add meal error:", err);
       const errorMessage = err?.message || "Failed to add meal";
       setError(errorMessage);
       toast.error(errorMessage);
@@ -342,13 +371,16 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
     itemIndex: number
   ) => {
     try {
+      const dateForAPI = new Date(currentDate);
+      dateForAPI.setHours(0, 0, 0, 0);
+      
       const res = await fetch("/api/profile/meals", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mealType: type,
           itemIndex,
-          date: currentDate.toISOString(),
+          date: dateForAPI.toISOString(),
         }),
       });
       
@@ -358,22 +390,47 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
         throw new Error(json?.message || "Failed to remove meal");
       }
 
-      // Update meals data immediately
       if (json.success && json.meals) {
+        console.log("✅ Meal removed, updated meals:", json.meals);
         setAllMeals(json.meals);
-        toast.success("🗑️ Meal removed successfully");
+        
+        // Force update mealsData for current date
+        const targetDate = new Date(currentDate);
+        targetDate.setHours(0, 0, 0, 0);
+        const updatedDayMeals = json.meals.find((d: any) => {
+          const dt = new Date(d.date);
+          dt.setHours(0, 0, 0, 0);
+          return dt.getTime() === targetDate.getTime();
+        });
+        
+        if (updatedDayMeals) {
+          setMealsData(updatedDayMeals);
+        } else {
+          // No meals left for this date
+          setMealsData({
+            date: currentDate.toISOString(),
+            breakfast: [],
+            lunch: [],
+            dinner: [],
+            snacks: [],
+          });
+        }
+        
+        toast.success(`🗑️ Meal removed from ${type}`);
+        
+        // Notify parent component
+        console.log('🔄 Calling onMealAdded callback after removal to refresh overview & analytics');
+        if (onMealAdded) {
+          onMealAdded();
+        } else {
+          console.warn('⚠️ onMealAdded callback not provided');
+        }
       } else {
         throw new Error("Invalid response from server");
       }
-      
-      // Notify parent component that meal was removed
-      if (onMealAdded) {
-        onMealAdded();
-      }
     } catch (err: any) {
-      console.error("Remove meal error:", err);
+      console.error("❌ Remove meal error:", err);
       const errorMessage = err?.message || "Failed to remove meal";
-      setError(errorMessage);
       toast.error(errorMessage);
     }
   };

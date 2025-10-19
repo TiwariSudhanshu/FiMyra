@@ -299,7 +299,33 @@ const GoalsSection: React.FC = () => {
           (goal.type === 'weight-gain' && weightDiff > 0) ||
           (goal.type === 'muscle-gain' && weightDiff > 0);
         
-        if (isImprovement) {
+        // Check if goal is reached
+        const goalReached = 
+          (goal.type === 'weight-loss' && weightValue <= goal.targetWeight) ||
+          ((goal.type === 'weight-gain' || goal.type === 'muscle-gain') && weightValue >= goal.targetWeight);
+        
+        if (goalReached) {
+          // Add activity feed entry for goal completion
+          console.log('🎯 Goal reached! Adding activity feed entry...');
+          const activityRes = await fetch('/api/tracking/activities', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'goal_complete',
+              title: `🎯 Goal Completed!`,
+              description: `${goal.type?.replace('-', ' ')} goal achieved: ${goal.currentWeight}kg → ${goal.targetWeight}kg`,
+              icon: '🎉'
+            })
+          });
+          
+          if (activityRes.ok) {
+            console.log('✅ Activity feed entry added successfully');
+          } else {
+            console.error('❌ Failed to add activity feed entry:', activityRes.status);
+          }
+          
+          toast.success(`🎉 Congratulations! You reached your goal weight of ${goal.targetWeight}kg!`);
+        } else if (isImprovement) {
           toast.success(`🎉 Great progress! Weight updated to ${weightValue}kg`);
         } else {
           toast.info(`📊 Progress updated: ${weightValue}kg`);

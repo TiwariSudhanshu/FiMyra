@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -35,27 +35,7 @@ const SignupPage: React.FC = () => {
     }
 
     try {
-      // DIRECT REGISTRATION - OTP COMMENTED OUT
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSuccess('Account created successfully! Redirecting to dashboard...');
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 1500);
-      } else {
-        setError(data.message || 'Registration failed');
-      }
-
-      /* OTP VERIFICATION - COMMENTED OUT FOR NOW
-      // Send OTP to email
+      // Send OTP to email for verification
       const response = await fetch('/api/auth/verify/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -70,10 +50,15 @@ const SignupPage: React.FC = () => {
       if (data.success) {
         setSuccess('OTP sent to your email! Please check your inbox.');
         setShowOtpModal(true);
+        
+        // Show OTP in console for development testing
+        if (process.env.NODE_ENV === 'development' && data.devOtp) {
+          console.log('🔑 Development OTP:', data.devOtp);
+          console.log('✅ Check your email or use the OTP above');
+        }
       } else {
         setError(data.message || 'Failed to send OTP');
       }
-      */
     } catch (error) {
       setError('Registration failed. Please try again.');
     } finally {
@@ -81,13 +66,7 @@ const SignupPage: React.FC = () => {
     }
   };
 
-  // OTP VERIFICATION FUNCTION - DISABLED (empty function for TypeScript)
   const handleVerifyOtp = async () => {
-    return; // OTP verification disabled
-  };
-  
-  /* ORIGINAL OTP FUNCTION - COMMENTED OUT
-  const handleVerifyOtpOriginal = async () => {
     if (!otp || otp.length !== 6) {
       setOtpError('Please enter a valid 6-digit OTP');
       return;
@@ -137,15 +116,20 @@ const SignupPage: React.FC = () => {
       setVerifying(false);
     }
   };
-  */
 
-  // RESEND OTP FUNCTION - DISABLED (empty function for TypeScript)
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  // Start cooldown timer
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
   const handleResendOtp = async () => {
-    return; // Resend OTP disabled
-  };
-  
-  /* ORIGINAL RESEND FUNCTION - COMMENTED OUT
-  const handleResendOtpOriginal = async () => {
+    if (resendCooldown > 0) return;
+    
     setLoading(true);
     setOtpError('');
 
@@ -164,6 +148,13 @@ const SignupPage: React.FC = () => {
       if (data.success) {
         setOtp('');
         setSuccess('New OTP sent to your email!');
+        setResendCooldown(60); // 60 second cooldown
+        setTimeout(() => setSuccess(''), 3000);
+        
+        // Show OTP in console for development testing
+        if (process.env.NODE_ENV === 'development' && data.devOtp) {
+          console.log('🔑 Development OTP (Resent):', data.devOtp);
+        }
       } else {
         setOtpError(data.message || 'Failed to resend OTP');
       }
@@ -173,7 +164,6 @@ const SignupPage: React.FC = () => {
       setLoading(false);
     }
   };
-  */
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -431,8 +421,8 @@ const SignupPage: React.FC = () => {
       </div>
     </div>
 
-    {/* OTP Verification Modal - COMMENTED OUT FOR NOW */}
-    {false && showOtpModal && (
+    {/* OTP Verification Modal */}
+    {showOtpModal && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
         <div className="relative bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 border border-white/20 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
           <button
@@ -537,10 +527,10 @@ const SignupPage: React.FC = () => {
               <p className="text-white/60 text-sm mb-2">Didn't receive the code?</p>
               <button
                 onClick={handleResendOtp}
-                disabled={loading}
-                className="text-purple-400 hover:text-purple-300 font-medium text-sm transition-colors disabled:opacity-50"
+                disabled={loading || resendCooldown > 0}
+                className="text-purple-400 hover:text-purple-300 font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Resend OTP
+                {resendCooldown > 0 ? `Resend OTP (${resendCooldown}s)` : 'Resend OTP'}
               </button>
             </div>
           </div>

@@ -36,41 +36,73 @@ const ActivitySection: React.FC = () => {
   const [streaks, setStreaks] = useState<Streaks | null>(null);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchData();
+    
+    // Auto-refresh every 30 seconds to catch new activities
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing activity feed...');
+      fetchData();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (isManualRefresh = false) => {
+    if (isManualRefresh) {
+      setRefreshing(true);
+    }
+    console.log('📋 ActivitySection: Fetching activity data...');
     try {
       // Fetch activities
       const activitiesRes = await fetch('/api/tracking/activities');
       if (activitiesRes.ok) {
         const data = await activitiesRes.json();
+        console.log('📋 Activities fetched:', data.activities?.length || 0, 'activities');
+        console.log('📋 Activity details:', data.activities);
         setActivities(data.activities || []);
         setUnreadCount(data.unreadCount || 0);
+      } else {
+        console.error('❌ Failed to fetch activities:', activitiesRes.status);
       }
 
       // Fetch tracking data
       const trackingRes = await fetch('/api/tracking/daily');
       if (trackingRes.ok) {
         const data = await trackingRes.json();
+        console.log('📊 Daily tracking data:', data.tracking);
         setTracking(data.tracking);
+      } else {
+        console.error('❌ Failed to fetch tracking data:', trackingRes.status);
       }
 
       // Fetch profile for streaks
       const profileRes = await fetch('/api/profile');
       if (profileRes.ok) {
         const data = await profileRes.json();
+        console.log('🔥 Streaks data:', data.user?.streaks);
         if (data.user?.streaks) {
           setStreaks(data.user.streaks);
+        } else {
+          console.warn('⚠️ No streaks data found in user profile');
         }
+      } else {
+        console.error('❌ Failed to fetch profile:', profileRes.status);
       }
     } catch (error) {
-      console.error('Failed to fetch activity data:', error);
+      console.error('❌ Failed to fetch activity data:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
+      console.log('📋 ActivitySection: Data fetch complete');
     }
+  };
+
+  const handleManualRefresh = () => {
+    console.log('🔄 Manual refresh triggered');
+    fetchData(true);
   };
 
   const markAsRead = async (activityId?: string, all?: boolean) => {
@@ -207,14 +239,33 @@ const ActivitySection: React.FC = () => {
               </span>
             )}
           </div>
-          {unreadCount > 0 && (
-            <button
-              onClick={() => markAsRead(undefined, true)}
-              className="text-blue-300 hover:text-blue-200 text-sm font-medium transition-colors px-4 py-2 rounded-lg hover:bg-blue-400/10"
+          <div className="flex items-center gap-2">
+            <motion.button
+              onClick={handleManualRefresh}
+              disabled={refreshing}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="text-white/60 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5 disabled:opacity-50"
+              title="Refresh activities"
             >
-              Mark all read
-            </button>
-          )}
+              <svg 
+                className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </motion.button>
+            {unreadCount > 0 && (
+              <button
+                onClick={() => markAsRead(undefined, true)}
+                className="text-blue-300 hover:text-blue-200 text-sm font-medium transition-colors px-4 py-2 rounded-lg hover:bg-blue-400/10"
+              >
+                Mark all read
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="space-y-4">

@@ -57,7 +57,8 @@ const getTabs = (
   user: User | null, 
   onTabChange: (tab: TabId) => void,
   overviewKey: number,
-  onMealUpdate: () => void
+  onMealUpdate: () => void,
+  analyticsKey: number
 ): Tab[] => [
   {
     id: 'overview',
@@ -83,7 +84,7 @@ const getTabs = (
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
     ),
-    component: <AnalyticsOverview />
+    component: <AnalyticsOverview refreshTrigger={analyticsKey} />
   },
   {
     id: 'goals',
@@ -174,12 +175,15 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [overviewKey, setOverviewKey] = useState(0); // Key to force re-render of overview
+  const [analyticsKey, setAnalyticsKey] = useState(0); // Key to force re-render of analytics
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
 
   const handleMealUpdate = () => {
-    // Force re-render of overview section when meals are added/removed
+    // Force re-render of overview section and analytics when meals are added/removed
     setOverviewKey(prev => prev + 1);
+    setAnalyticsKey(prev => prev + 1);
+    console.log('🔄 Triggering overview and analytics refresh');
   };
 
   useEffect(() => {
@@ -382,7 +386,7 @@ const Dashboard: React.FC = () => {
             {/* Desktop Navigation */}
             <div className="hidden lg:block bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-2">
               <div className="flex flex-wrap gap-1">
-                {getTabs(user, setActiveTab, overviewKey, handleMealUpdate).map((tab) => (
+                {getTabs(user, setActiveTab, overviewKey, handleMealUpdate, analyticsKey).map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
@@ -404,7 +408,7 @@ const Dashboard: React.FC = () => {
             {/* Mobile/Tablet Navigation - Icons Grid */}
             <div className="lg:hidden bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-3">
               <div className="grid grid-cols-5 gap-2">
-                {getTabs(user, setActiveTab, overviewKey, handleMealUpdate).map((tab) => (
+                {getTabs(user, setActiveTab, overviewKey, handleMealUpdate, analyticsKey).map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
@@ -428,7 +432,7 @@ const Dashboard: React.FC = () => {
 
           {/* Tab Content */}
           <div className="min-h-[600px]">
-            {getTabs(user, setActiveTab, overviewKey, handleMealUpdate).map((tab) => (
+            {getTabs(user, setActiveTab, overviewKey, handleMealUpdate, analyticsKey).map((tab) => (
               <div
                 key={tab.id}
                 className={`transition-all duration-300 ${
