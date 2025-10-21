@@ -42,6 +42,7 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
   const [tracking, setTracking] = useState<DailyTracking | null>(null);
   const [goal, setGoal] = useState<Goal | null>(null);
   const [loading, setLoading] = useState(true);
+  const [meals, setMeals] = useState<any[]>([]);
 
   useEffect(() => {
     console.log('📊 OverviewSection mounted/re-mounted, fetching data...');
@@ -52,14 +53,59 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
     console.log('📊 OverviewSection: Starting fetchData...');
     setLoading(true);
     try {
-      // Fetch tracking data
-      const trackingRes = await fetch('/api/tracking/daily');
-      if (trackingRes.ok) {
-        const trackingData = await trackingRes.json();
-        console.log('📊 Tracking data received:', trackingData.tracking);
-        setTracking(trackingData.tracking);
+      // Fetch meals data to calculate actual consumed values
+      const mealsRes = await fetch('/api/profile/meals');
+      if (mealsRes.ok) {
+        const mealsData = await mealsRes.json();
+        console.log('📊 Meals data received:', mealsData.meals?.length || 0, 'days');
+        setMeals(mealsData.meals || []);
+        
+        // Calculate today's actual consumption from meals
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const todayMeal = (mealsData.meals || []).find((day: any) => {
+          const dayDate = new Date(day.date);
+          dayDate.setHours(0, 0, 0, 0);
+          return dayDate.getTime() === today.getTime();
+        });
+        
+        let actualConsumed = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+        
+        if (todayMeal) {
+          ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
+            const mealArray = todayMeal[mealType] || [];
+            mealArray.forEach((item: any) => {
+              actualConsumed.calories += item.calories || 0;
+              actualConsumed.protein += item.protein || 0;
+              actualConsumed.carbs += item.carbs || 0;
+              actualConsumed.fat += item.fat || 0;
+              actualConsumed.fiber += item.fiber || 0;
+            });
+          });
+        }
+        
+        console.log('📊 Today\'s actual consumption from meals:', actualConsumed);
+        
+        // Fetch tracking data for goals
+        const trackingRes = await fetch('/api/tracking/daily');
+        if (trackingRes.ok) {
+          const trackingData = await trackingRes.json();
+          console.log('📊 Tracking goals received:', trackingData.tracking);
+          
+          // Merge actual consumed values with tracking goals
+          setTracking({
+            ...trackingData.tracking,
+            caloriesConsumed: Math.round(actualConsumed.calories),
+            proteinConsumed: Math.round(actualConsumed.protein),
+            carbsConsumed: Math.round(actualConsumed.carbs),
+            fatConsumed: Math.round(actualConsumed.fat),
+          });
+        } else {
+          console.error('Failed to fetch tracking data:', trackingRes.status);
+        }
       } else {
-        console.error('Failed to fetch tracking data:', trackingRes.status);
+        console.error('Failed to fetch meals data:', mealsRes.status);
       }
 
       // Fetch goal
