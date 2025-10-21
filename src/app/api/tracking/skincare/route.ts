@@ -38,7 +38,7 @@ async function getUserIdFromReq(req: Request | any) {
   return userId;
 }
 
-// GET - Fetch skin care tracking history
+// GET - Fetch skin care tracking history and profile
 export async function GET(request: NextRequest) {
   try {
     const userId = await getUserIdFromReq(request);
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
-    const user = await User.findById(userId).select('skinCareTracking');
+    const user = await User.findById(userId).select('skinCareTracking skinCareProfile');
     if (!user) {
       return NextResponse.json(
         { success: false, message: 'User not found' },
@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
       success: true,
       tracking: trackingData,
       todayStatus: todayTracking || null,
+      profile: user.skinCareProfile || null,
       stats: {
         totalDays: trackingData.length,
         morningCompleted: trackingData.filter((t: any) => t.morningRoutineCompleted).length,
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Update/Create skin care tracking for today
+// POST - Update/Create skin care tracking for today (including individual steps)
 export async function POST(request: NextRequest) {
   try {
     const userId = await getUserIdFromReq(request);
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { morningRoutineCompleted, eveningRoutineCompleted, notes } = body;
+    const { morningRoutineCompleted, eveningRoutineCompleted, notes, step, routine } = body;
 
     await connectDB();
 
@@ -135,6 +136,99 @@ export async function POST(request: NextRequest) {
       (track: any) => new Date(track.date).setHours(0, 0, 0, 0) === today.getTime()
     ) ?? -1;
 
+    // Handle individual step completion
+    if (step && routine) {
+      if (trackingIndex >= 0) {
+        // Check if step already completed today
+        const existingStep = user.skinCareTracking![trackingIndex].completedSteps?.find(
+          (s: any) => s.step === step && s.routine === routine
+        );
+
+        if (existingStep) {
+          return NextResponse.json({
+            success: false,
+            message: 'Step already completed today'
+          }, { status: 400 });
+        }
+
+        // Add step to completedSteps
+        if (!user.skinCareTracking![trackingIndex].completedSteps) {
+          user.skinCareTracking![trackingIndex].completedSteps = [];
+        }
+        user.skinCareTracking![trackingIndex].completedSteps!.push({
+          step,
+          time: new Date(),
+          routine
+        } as any);
+      } else {
+        // Create new tracking entry with this step
+        if (!user.skinCareTracking) {
+          user.skinCareTracking = [];
+        }
+        user.skinCareTracking.push({
+          date: today,
+          morningRoutineCompleted: false,
+          eveningRoutineCompleted: false,
+          notes: '',
+          completedSteps: [{
+            step,
+            time: new Date(),
+            routine
+          }]
+        } as any);
+      }
+
+      await user.save();
+
+      // Check if all steps for this routine are completed
+      const updatedTrackingIndex = user.skinCareTracking?.findIndex(
+        (track: any) => new Date(track.date).setHours(0, 0, 0, 0) === today.getTime()
+      ) ?? -1;
+
+      if (updatedTrackingIndex >= 0) {
+        const completedSteps = user.skinCareTracking![updatedTrackingIndex].completedSteps || [];
+        const routineSteps = routine === 'morning' 
+          ? user.skinCareProfile?.morningSteps?.filter((s: any) => s.enabled) 
+          : user.skinCareProfile?.eveningSteps?.filter((s: any) => s.enabled);
+
+        const completedRoutineSteps = completedSteps.filter((s: any) => s.routine === routine);
+        const allStepsCompleted = routineSteps && completedRoutineSteps.length >= routineSteps.length;
+
+        if (allStepsCompleted) {
+          // Mark routine as completed
+          if (routine === 'morning') {
+            user.skinCareTracking![updatedTrackingIndex].morningRoutineCompleted = true;
+          } else {
+            user.skinCareTracking![updatedTrackingIndex].eveningRoutineCompleted = true;
+          }
+
+          // Add activity feed entry
+          if (!user.activities) {
+            user.activities = [];
+          }
+          user.activities.unshift({
+            type: 'milestone',
+            title: routine === 'morning' ? '🌅 Morning Skincare Completed!' : '🌙 Evening Skincare Completed!',
+            description: `Completed all ${routineSteps?.length || 0} steps of your ${routine} skincare routine`,
+            icon: routine === 'morning' ? '☀️' : '🌜',
+            timestamp: new Date(),
+            read: false
+          } as any);
+
+          await user.save();
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Step completed successfully',
+        tracking: user.skinCareTracking?.find(
+          (track: any) => new Date(track.date).setHours(0, 0, 0, 0) === today.getTime()
+        )
+      });
+    }
+
+    // Handle whole routine update (existing functionality)
     if (trackingIndex >= 0) {
       // Update existing tracking
       user.skinCareTracking![trackingIndex] = {

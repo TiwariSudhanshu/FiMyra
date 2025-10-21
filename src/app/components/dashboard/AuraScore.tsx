@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface AuraScoreProps {}
 
@@ -81,11 +82,11 @@ const AuraScore: React.FC<AuraScoreProps> = () => {
         // Reload to get updated history
         await loadAuraScore();
       } else {
-        alert('Failed to calculate Aura Score: ' + data.message);
+        toast.error('Failed to calculate Aura Score: ' + data.message);
       }
     } catch (error) {
       console.error('Error calculating Aura Score:', error);
-      alert('Error calculating Aura Score. Please try again.');
+      toast.error('Error calculating Aura Score. Please try again.');
     } finally {
       setCalculating(false);
     }

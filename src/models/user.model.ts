@@ -148,6 +148,19 @@ export interface IUser extends Document {
       evening: string[];
       products: string[];
     };
+    // Enhanced routine with times and reminders
+    morningSteps?: Array<{
+      step: string;
+      product?: string;
+      reminderTime?: string; // HH:mm format
+      enabled: boolean;
+    }>;
+    eveningSteps?: Array<{
+      step: string;
+      product?: string;
+      reminderTime?: string; // HH:mm format
+      enabled: boolean;
+    }>;
     goals: string[];
     notes?: string;
     updatedAt?: Date;
@@ -157,6 +170,12 @@ export interface IUser extends Document {
     date: Date;
     morningRoutineCompleted: boolean;
     eveningRoutineCompleted: boolean;
+    // Track individual steps
+    completedSteps?: Array<{
+      step: string;
+      time: Date;
+      routine: 'morning' | 'evening';
+    }>;
     notes?: string;
   }>;
   // Hair Care Tracking (wash reminders and completion)
@@ -432,6 +451,19 @@ const UserSchema: Schema<IUser> = new Schema(
         evening: [{ type: String }],
         products: [{ type: String }]
       },
+      // Enhanced routine with times and reminders
+      morningSteps: [{
+        step: { type: String, required: true },
+        product: { type: String },
+        reminderTime: { type: String }, // HH:mm format
+        enabled: { type: Boolean, default: true }
+      }],
+      eveningSteps: [{
+        step: { type: String, required: true },
+        product: { type: String },
+        reminderTime: { type: String }, // HH:mm format
+        enabled: { type: Boolean, default: true }
+      }],
       goals: [{ type: String }],
       notes: { type: String },
       updatedAt: { type: Date, default: Date.now }
@@ -441,6 +473,12 @@ const UserSchema: Schema<IUser> = new Schema(
       date: { type: Date, required: true },
       morningRoutineCompleted: { type: Boolean, default: false },
       eveningRoutineCompleted: { type: Boolean, default: false },
+      // Track individual steps
+      completedSteps: [{
+        step: { type: String, required: true },
+        time: { type: Date, required: true },
+        routine: { type: String, enum: ['morning', 'evening'], required: true }
+      }],
       notes: { type: String }
     }],
     // Hair Care Tracking (wash reminders and completion)

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface SkinCareProps {}
 
@@ -132,7 +133,7 @@ const SkinCare: React.FC<SkinCareProps> = () => {
   const saveProfile = async () => {
     // Validate required fields
     if (!skinType) {
-      alert('Please select your skin type');
+      toast.error('Please select your skin type');
       return;
     }
 
@@ -196,13 +197,13 @@ const SkinCare: React.FC<SkinCareProps> = () => {
       const data = await response.json();
       
       if (data.success) {
-        alert('✅ Skin care profile saved successfully!');
+        toast.success('Skin care profile saved successfully!');
       } else {
-        alert('❌ Failed to save profile: ' + (data.message || 'Unknown error'));
+        toast.error('Failed to save profile: ' + (data.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error saving skin care profile:', error);
-      alert('❌ Error saving profile. Please try again.');
+      toast.error('Error saving profile. Please try again.');
     } finally {
       setSaving(false);
     }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 /**
  * GoogleLoginButton Component
@@ -63,7 +64,7 @@ export default function GoogleLoginButton({ onSuccess, onError }: GoogleLoginBut
         if (onError) {
           onError(data.message);
         } else {
-          alert(data.message);
+          toast.error(data.message);
         }
       }
     } catch (error) {
@@ -72,7 +73,7 @@ export default function GoogleLoginButton({ onSuccess, onError }: GoogleLoginBut
       if (onError) {
         onError(errorMessage);
       } else {
-        alert(errorMessage);
+        toast.error(errorMessage);
       }
     } finally {
       setIsLoading(false);
@@ -85,7 +86,7 @@ export default function GoogleLoginButton({ onSuccess, onError }: GoogleLoginBut
     if (onError) {
       onError(errorMessage);
     } else {
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -111,7 +112,7 @@ export default function GoogleLoginButton({ onSuccess, onError }: GoogleLoginBut
 
       {/* Placeholder button - replace with actual GoogleLogin component */}
       <button
-        onClick={() => alert('Install @react-oauth/google and uncomment GoogleLogin component')}
+        onClick={() => toast.info('Install @react-oauth/google and uncomment GoogleLogin component')}
         className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium text-gray-700"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">

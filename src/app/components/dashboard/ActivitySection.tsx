@@ -5,12 +5,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface Activity {
   _id?: string;
-  type: 'goal_complete' | 'target_achieved' | 'meal_logged' | 'exercise_completed' | 'streak' | 'milestone';
+  type: 'goal_complete' | 'target_achieved' | 'meal_logged' | 'exercise_completed' | 'streak' | 'milestone' | 'skincare_reminder';
   title: string;
   description: string;
   timestamp: Date;
   icon: string;
   read: boolean;
+  // For skincare reminders
+  skincareStep?: string;
+  skincareRoutine?: 'morning' | 'evening';
+  skincareCompleted?: boolean;
 }
 
 interface DailyTracking {
@@ -40,11 +44,13 @@ const ActivitySection: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+    generateSkincareReminders();
     
     // Auto-refresh every 30 seconds to catch new activities
     const interval = setInterval(() => {
       console.log('🔄 Auto-refreshing activity feed...');
       fetchData();
+      generateSkincareReminders();
     }, 30000);
     
     return () => clearInterval(interval);
@@ -103,6 +109,136 @@ const ActivitySection: React.FC = () => {
   const handleManualRefresh = () => {
     console.log('🔄 Manual refresh triggered');
     fetchData(true);
+    generateSkincareReminders();
+  };
+
+  const generateSkincareReminders = async () => {
+    try {
+      // Fetch skincare profile and today's tracking
+      const res = await fetch('/api/tracking/skincare');
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const profile = data.profile;
+      const todayStatus = data.todayStatus;
+
+      if (!profile) return;
+
+      const now = new Date();
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const completedSteps = todayStatus?.completedSteps || [];
+
+      // Generate reminders for enabled morning steps
+      if (profile.morningSteps) {
+        profile.morningSteps
+          .filter((step: any) => step.enabled && step.reminderTime)
+          .forEach((step: any) => {
+            // Check if it's time for this reminder (within 30 minutes window)
+            const reminderTime = step.reminderTime;
+            const [reminderHour, reminderMinute] = reminderTime.split(':').map(Number);
+            const reminderDate = new Date();
+            reminderDate.setHours(reminderHour, reminderMinute, 0, 0);
+
+            const timeDiff = now.getTime() - reminderDate.getTime();
+            const withinWindow = timeDiff >= 0 && timeDiff < 30 * 60 * 1000; // 30 minutes
+
+            // Check if step already completed
+            const isCompleted = completedSteps.some(
+              (cs: any) => cs.step === step.step && cs.routine === 'morning'
+            );
+
+            if (withinWindow && !isCompleted) {
+              // Check if reminder already exists in activities
+              const reminderExists = activities.some(
+                (a) => a.type === 'skincare_reminder' && 
+                       a.skincareStep === step.step && 
+                       a.skincareRoutine === 'morning'
+              );
+
+              if (!reminderExists) {
+                setActivities(prev => [{
+                  type: 'skincare_reminder',
+                  title: `🌅 ${step.step}`,
+                  description: step.product ? `Time to apply ${step.product}` : 'Complete your morning skincare step',
+                  timestamp: new Date(),
+                  icon: '☀️',
+                  read: false,
+                  skincareStep: step.step,
+                  skincareRoutine: 'morning',
+                  skincareCompleted: false
+                } as Activity, ...prev]);
+              }
+            }
+          });
+      }
+
+      // Generate reminders for enabled evening steps
+      if (profile.eveningSteps) {
+        profile.eveningSteps
+          .filter((step: any) => step.enabled && step.reminderTime)
+          .forEach((step: any) => {
+            const reminderTime = step.reminderTime;
+            const [reminderHour, reminderMinute] = reminderTime.split(':').map(Number);
+            const reminderDate = new Date();
+            reminderDate.setHours(reminderHour, reminderMinute, 0, 0);
+
+            const timeDiff = now.getTime() - reminderDate.getTime();
+            const withinWindow = timeDiff >= 0 && timeDiff < 30 * 60 * 1000;
+
+            const isCompleted = completedSteps.some(
+              (cs: any) => cs.step === step.step && cs.routine === 'evening'
+            );
+
+            if (withinWindow && !isCompleted) {
+              const reminderExists = activities.some(
+                (a) => a.type === 'skincare_reminder' && 
+                       a.skincareStep === step.step && 
+                       a.skincareRoutine === 'evening'
+              );
+
+              if (!reminderExists) {
+                setActivities(prev => [{
+                  type: 'skincare_reminder',
+                  title: `🌙 ${step.step}`,
+                  description: step.product ? `Time to apply ${step.product}` : 'Complete your evening skincare step',
+                  timestamp: new Date(),
+                  icon: '🌜',
+                  read: false,
+                  skincareStep: step.step,
+                  skincareRoutine: 'evening',
+                  skincareCompleted: false
+                } as Activity, ...prev]);
+              }
+            }
+          });
+      }
+    } catch (error) {
+      console.error('Failed to generate skincare reminders:', error);
+    }
+  };
+
+  const completeSkincareStep = async (step: string, routine: 'morning' | 'evening', activityId?: string) => {
+    try {
+      const res = await fetch('/api/tracking/skincare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step, routine })
+      });
+
+      if (res.ok) {
+        // Mark reminder as completed in local state
+        setActivities(prev => prev.map(a => 
+          a._id === activityId || (a.skincareStep === step && a.skincareRoutine === routine)
+            ? { ...a, skincareCompleted: true, read: true }
+            : a
+        ));
+
+        // Refresh data to get new milestone activities if routine completed
+        fetchData();
+      }
+    } catch (error) {
+      console.error('Failed to complete skincare step:', error);
+    }
   };
 
   const markAsRead = async (activityId?: string, all?: boolean) => {
@@ -132,7 +268,8 @@ const ActivitySection: React.FC = () => {
       meal_logged: 'from-purple-500/10 to-pink-500/10 border-purple-400/20',
       exercise_completed: 'from-yellow-500/10 to-orange-500/10 border-yellow-400/20',
       streak: 'from-orange-500/10 to-red-500/10 border-orange-400/20',
-      milestone: 'from-pink-500/10 to-purple-500/10 border-pink-400/20'
+      milestone: 'from-pink-500/10 to-purple-500/10 border-pink-400/20',
+      skincare_reminder: 'from-cyan-500/10 to-blue-500/10 border-cyan-400/20'
     };
     return colors[type as keyof typeof colors] || 'from-white/5 to-white/5 border-white/10';
   };
@@ -283,10 +420,14 @@ const ActivitySection: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ delay: index * 0.05 }}
-                  className={`relative p-6 rounded-xl border bg-gradient-to-r ${getActivityColor(activity.type)} transition-all hover:scale-[1.02] cursor-pointer ${
+                  className={`relative p-6 rounded-xl border bg-gradient-to-r ${getActivityColor(activity.type)} transition-all hover:scale-[1.02] ${
+                    activity.type !== 'skincare_reminder' ? 'cursor-pointer' : ''
+                  } ${
                     !activity.read ? 'ring-2 ring-blue-400/30' : ''
+                  } ${
+                    activity.skincareCompleted ? 'opacity-60' : ''
                   }`}
-                  onClick={() => !activity.read && markAsRead(activity._id)}
+                  onClick={() => activity.type !== 'skincare_reminder' && !activity.read && markAsRead(activity._id)}
                 >
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0">
@@ -298,8 +439,39 @@ const ActivitySection: React.FC = () => {
                         <span className="text-white/50 text-sm">{formatTimestamp(activity.timestamp)}</span>
                       </div>
                       <p className="text-white/70 text-sm">{activity.description}</p>
+                      
+                      {/* Skincare Reminder Actions */}
+                      {activity.type === 'skincare_reminder' && !activity.skincareCompleted && (
+                        <div className="mt-4 flex items-center gap-3">
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => completeSkincareStep(
+                              activity.skincareStep!,
+                              activity.skincareRoutine!,
+                              activity._id
+                            )}
+                            className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-medium hover:shadow-lg hover:shadow-cyan-500/30 transition-all flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Mark as Done
+                          </motion.button>
+                          <span className="text-white/50 text-xs">✨ Complete this step</span>
+                        </div>
+                      )}
+                      
+                      {activity.type === 'skincare_reminder' && activity.skincareCompleted && (
+                        <div className="mt-3 flex items-center gap-2 text-green-400">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-sm font-medium">Completed!</span>
+                        </div>
+                      )}
                     </div>
-                    {!activity.read && (
+                    {!activity.read && activity.type !== 'skincare_reminder' && (
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse flex-shrink-0"></div>
                     )}
                   </div>
