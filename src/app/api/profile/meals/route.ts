@@ -121,8 +121,25 @@ export async function POST(req: Request) {
     const user = await User.findById(userId)
     if (!user) return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 })
 
-    const targetDate = date ? new Date(date) : new Date()
-    targetDate.setHours(0, 0, 0, 0)
+    // Handle date properly - if string format YYYY-MM-DD, parse it without timezone conversion
+    let targetDate: Date;
+    if (date) {
+      if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        // YYYY-MM-DD format - parse as local date
+        const [year, month, day] = date.split('-').map(Number);
+        targetDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+      } else {
+        // ISO string or other format
+        targetDate = new Date(date);
+        targetDate.setHours(0, 0, 0, 0);
+      }
+    } else {
+      targetDate = new Date();
+      targetDate.setHours(0, 0, 0, 0);
+    }
+    
+    console.log('📅 Parsed target date:', targetDate.toISOString());
+    console.log('📅 Local date string:', targetDate.toLocaleDateString());
 
     // Initialize meals array if not exists
     if (!user.meals) {
@@ -235,6 +252,11 @@ export async function POST(req: Request) {
 
     // Mark the meals array as modified for Mongoose to track changes
     user.markModified('meals')
+    
+    console.log('📝 Saving meal to database...');
+    console.log('📝 Date:', targetDate.toISOString());
+    console.log('📝 Meal type:', mealType);
+    console.log('📝 Items:', processedMeals.map(m => m.name).join(', '));
 
     // 5. Update daily tracking with the added nutrients
     const totalCalories = processedMeals.reduce((sum, meal) => sum + (meal.calories || 0), 0);
@@ -295,6 +317,10 @@ export async function POST(req: Request) {
 
     // Save everything atomically
     await user.save()
+    
+    console.log('✅ SAVED TO DATABASE');
+    console.log('✅ Total meal days in DB:', user.meals.length);
+    console.log('✅ Latest meal date:', user.meals[user.meals.length - 1]?.date);
 
     return NextResponse.json({ 
       success: true, 
@@ -322,6 +348,14 @@ export async function GET(req: Request) {
     await connectDB()
     const user = await User.findById(userId)
     if (!user) return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 })
+
+    console.log('📖 GET /api/profile/meals');
+    console.log('📖 User:', user.email);
+    console.log('📖 Total meal days:', user.meals?.length || 0);
+    if (user.meals && user.meals.length > 0) {
+      const dates = user.meals.map((m: any) => new Date(m.date).toLocaleDateString()).slice(-5);
+      console.log('📖 Recent dates:', dates.join(', '));
+    }
 
     return NextResponse.json({ success: true, meals: user.meals || [] })
   } catch (err: any) {
@@ -352,8 +386,17 @@ export async function DELETE(req: Request) {
     const user = await User.findById(userId)
     if (!user) return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 })
 
-    const targetDate = new Date(date)
-    targetDate.setHours(0, 0, 0, 0)
+    // Handle date properly - same as POST
+    let targetDate: Date;
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      // YYYY-MM-DD format - parse as local date
+      const [year, month, day] = date.split('-').map(Number);
+      targetDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+    } else {
+      // ISO string or other format
+      targetDate = new Date(date);
+      targetDate.setHours(0, 0, 0, 0);
+    }
 
     // Find existing entry for the date
     const dayEntry = (user.meals || []).find((m: any) => {

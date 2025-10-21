@@ -288,9 +288,13 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
     setError(null);
     
     try {
-      // Use a date string that's consistent with the backend
-      const dateForAPI = new Date(currentDate);
-      dateForAPI.setHours(0, 0, 0, 0);
+      // Send date in YYYY-MM-DD format to avoid timezone issues
+      const year = currentDate.getFullYear();
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const day = String(currentDate.getDate()).padStart(2, '0');
+      const dateString = `${year}-${month}-${day}`;
+      
+      console.log('📅 Sending meal for date:', dateString);
       
       const res = await fetch("/api/profile/meals", {
         method: "POST",
@@ -298,7 +302,7 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
         body: JSON.stringify({
           mealType: type,
           items,
-          date: dateForAPI.toISOString(),
+          date: dateString, // Send as YYYY-MM-DD string
         }),
       });
       
@@ -371,8 +375,11 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
     itemIndex: number
   ) => {
     try {
-      const dateForAPI = new Date(currentDate);
-      dateForAPI.setHours(0, 0, 0, 0);
+      // Send date in YYYY-MM-DD format to avoid timezone issues
+      const year = currentDate.getFullYear();
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const day = String(currentDate.getDate()).padStart(2, '0');
+      const dateString = `${year}-${month}-${day}`;
       
       const res = await fetch("/api/profile/meals", {
         method: "DELETE",
@@ -380,7 +387,7 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
         body: JSON.stringify({
           mealType: type,
           itemIndex,
-          date: dateForAPI.toISOString(),
+          date: dateString, // Send as YYYY-MM-DD string
         }),
       });
       
