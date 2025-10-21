@@ -17,6 +17,8 @@ export type MealItem = {
   fat?: number
   fiber?: number
   calories?: number
+  mood?: string // Emoji: 😀 😐 😔 😡 😴
+  moodNote?: string // Optional note about mood
 }
 
 /**

@@ -39,6 +39,8 @@ export interface IUser extends Document {
       fat?: number;
       fiber?: number;
       calories?: number;
+      mood?: string; // Emoji: 😀 😐 😔 😡 😴
+      moodNote?: string; // Optional note about mood
     }>;
     lunch?: Array<{
       name: string;
@@ -49,6 +51,8 @@ export interface IUser extends Document {
       fat?: number;
       fiber?: number;
       calories?: number;
+      mood?: string; // Emoji: 😀 😐 😔 😡 😴
+      moodNote?: string; // Optional note about mood
     }>;
     dinner?: Array<{
       name: string;
@@ -59,6 +63,8 @@ export interface IUser extends Document {
       fat?: number;
       fiber?: number;
       calories?: number;
+      mood?: string; // Emoji: 😀 😐 😔 😡 😴
+      moodNote?: string; // Optional note about mood
     }>;
     snacks?: Array<{
       name: string;
@@ -69,8 +75,18 @@ export interface IUser extends Document {
       fat?: number;
       fiber?: number;
       calories?: number;
+      mood?: string; // Emoji: 😀 😐 😔 😡 😴
+      moodNote?: string; // Optional note about mood
     }>;
   }[];
+  // Mood tracking (aggregated from meals)
+  moodTracking?: Array<{
+    date: Date;
+    mood: string; // Emoji: 😀 😐 😔 😡 😴
+    mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks';
+    note?: string;
+    timestamp: Date;
+  }>;
   savedMeals?: string[];
   recentMeals?: Array<{
     name: string;
@@ -335,7 +351,9 @@ const UserSchema: Schema<IUser> = new Schema(
         protein: { type: Number },
         fat: { type: Number },
         fiber: { type: Number },
-        calories: { type: Number }
+        calories: { type: Number },
+        mood: { type: String }, // Emoji: 😀 😐 😔 😡 😴
+        moodNote: { type: String } // Optional note
       }],
       lunch: [{
         name: { type: String, required: true },
@@ -345,7 +363,9 @@ const UserSchema: Schema<IUser> = new Schema(
         protein: { type: Number },
         fat: { type: Number },
         fiber: { type: Number },
-        calories: { type: Number }
+        calories: { type: Number },
+        mood: { type: String }, // Emoji: 😀 😐 😔 😡 😴
+        moodNote: { type: String } // Optional note
       }],
       dinner: [{
         name: { type: String, required: true },
@@ -355,7 +375,9 @@ const UserSchema: Schema<IUser> = new Schema(
         protein: { type: Number },
         fat: { type: Number },
         fiber: { type: Number },
-        calories: { type: Number }
+        calories: { type: Number },
+        mood: { type: String }, // Emoji: 😀 😐 😔 😡 😴
+        moodNote: { type: String } // Optional note
       }],
       snacks: [{
         name: { type: String, required: true },
@@ -365,8 +387,18 @@ const UserSchema: Schema<IUser> = new Schema(
         protein: { type: Number },
         fat: { type: Number },
         fiber: { type: Number },
-        calories: { type: Number }
+        calories: { type: Number },
+        mood: { type: String }, // Emoji: 😀 😐 😔 😡 😴
+        moodNote: { type: String } // Optional note
       }]
+    }],
+    // Mood tracking (aggregated from meals)
+    moodTracking: [{
+      date: { type: Date, required: true },
+      mood: { type: String, required: true }, // Emoji: 😀 😐 😔 😡 😴
+      mealType: { type: String, enum: ['breakfast', 'lunch', 'dinner', 'snacks'], required: true },
+      note: { type: String },
+      timestamp: { type: Date, default: Date.now }
     }],
     recentMeals: [{
       name: { type: String, required: true },

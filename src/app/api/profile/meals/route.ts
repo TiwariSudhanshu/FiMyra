@@ -101,10 +101,12 @@ function updateRecentMeals(user: any, mealItem: MealItem) {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { mealType, items, date } = body as { 
+    const { mealType, items, date, mood, moodNote } = body as { 
       mealType: string; 
       items: Array<{ name: string; quantity?: number; unit?: string }> | string[]; 
-      date?: string 
+      date?: string;
+      mood?: string; // Emoji: 😀 😐 😔 😡 😴
+      moodNote?: string; // Optional note
     }
 
     if (!mealType || !['breakfast', 'lunch', 'dinner', 'snacks'].includes(mealType)) {
@@ -189,6 +191,8 @@ export async function POST(req: Request) {
           fat: existingMeal.fat ? existingMeal.fat * quantity : undefined,
           fiber: existingMeal.fiber ? existingMeal.fiber * quantity : undefined,
           calories: existingMeal.calories ? existingMeal.calories * quantity : undefined,
+          mood: mood, // Add mood emoji
+          moodNote: moodNote, // Add mood note
         }
         processedMeals.push(scaledMeal)
         
@@ -218,6 +222,8 @@ export async function POST(req: Request) {
             fat: nutrientData.fat * quantity,
             fiber: nutrientData.fiber * quantity,
             calories: nutrientData.calories * quantity,
+            mood: mood, // Add mood emoji
+            moodNote: moodNote, // Add mood note
           }
           processedMeals.push(mealItem)
           
@@ -238,6 +244,8 @@ export async function POST(req: Request) {
             name: trimmedName,
             quantity,
             unit,
+            mood: mood, // Add mood emoji
+            moodNote: moodNote, // Add mood note
           }
           processedMeals.push(mealItem)
         }
@@ -314,6 +322,28 @@ export async function POST(req: Request) {
     }
 
     user.markModified('dailyTracking');
+
+    // 6. Add mood tracking entry if mood was provided
+    if (mood) {
+      if (!user.moodTracking) {
+        user.moodTracking = [];
+      }
+      
+      user.moodTracking.push({
+        date: targetDate,
+        mood: mood,
+        mealType: mealType as 'breakfast' | 'lunch' | 'dinner' | 'snacks',
+        note: moodNote || undefined,
+        timestamp: new Date()
+      } as any);
+      
+      // Keep only last 365 days of mood tracking
+      if (user.moodTracking.length > 1000) {
+        user.moodTracking = user.moodTracking.slice(-1000);
+      }
+      
+      user.markModified('moodTracking');
+    }
 
     // Save everything atomically
     await user.save()

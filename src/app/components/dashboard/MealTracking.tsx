@@ -13,6 +13,8 @@ type MealItem = {
   fat?: number;
   fiber?: number;
   calories?: number;
+  mood?: string; // Emoji: 😀 😐 😔 😡 😴
+  moodNote?: string; // Optional note about mood
 };
 
 type MealDay = {
@@ -77,10 +79,22 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
   const [savingSavedMeal, setSavingSavedMeal] = useState(false);
   const [newSavedName, setNewSavedName] = useState("");
   
+  // Mood tracking state
+  const [selectedMood, setSelectedMood] = useState<string>("");
+  const [moodNote, setMoodNote] = useState<string>("");
+  
   // Water tracking state
   const [waterIntake, setWaterIntake] = useState(0);
   const [waterGoal, setWaterGoal] = useState(8);
   const [updatingWater, setUpdatingWater] = useState(false);
+
+  const MOOD_EMOJIS = [
+    { emoji: "😀", label: "Happy" },
+    { emoji: "😐", label: "Neutral" },
+    { emoji: "😔", label: "Sad" },
+    { emoji: "😡", label: "Angry" },
+    { emoji: "😴", label: "Tired" }
+  ];
 
   useEffect(() => {
     const raw = localStorage.getItem("fimyra:recentMeals");
@@ -222,6 +236,8 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
     setModalMealType(type);
     setSelected([]);
     setQuery("");
+    setSelectedMood("");
+    setMoodNote("");
     setIsModalOpen(true);
   };
 
@@ -303,6 +319,8 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
           mealType: type,
           items,
           date: dateString, // Send as YYYY-MM-DD string
+          mood: selectedMood || undefined, // Include mood emoji
+          moodNote: moodNote.trim() || undefined, // Include mood note if provided
         }),
       });
       
@@ -349,6 +367,8 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
         setIsModalOpen(false);
         setSelected([]);
         setQuery("");
+        setSelectedMood("");
+        setMoodNote("");
         
         // Notify parent component
         console.log('🔄 Calling onMealAdded callback to refresh overview & analytics');
@@ -885,6 +905,50 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
                         {savingSavedMeal ? "Saving..." : "Save"}
                       </button>
                     </div>
+                  </div>
+
+                  {/* Mood Selection */}
+                  <div>
+                    <label className="block text-white/80 text-xs sm:text-sm font-medium mb-2 sm:mb-3">
+                      How are you feeling? (Optional)
+                    </label>
+                    <div className="flex flex-wrap gap-2 sm:gap-3 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-purple-500/20">
+                      {MOOD_EMOJIS.map((moodOption) => (
+                        <motion.button
+                          key={moodOption.emoji}
+                          onClick={() => setSelectedMood(selectedMood === moodOption.emoji ? "" : moodOption.emoji)}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.95 }}
+                          className={`flex flex-col items-center gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl transition-all ${
+                            selectedMood === moodOption.emoji
+                              ? "bg-gradient-to-r from-purple-500 to-blue-600 text-white shadow-lg shadow-purple-500/30 scale-110"
+                              : "bg-white/10 text-white/90 hover:bg-white/20"
+                          }`}
+                        >
+                          <span className="text-2xl sm:text-3xl">{moodOption.emoji}</span>
+                          <span className="text-[10px] sm:text-xs font-medium">{moodOption.label}</span>
+                        </motion.button>
+                      ))}
+                    </div>
+                    {selectedMood && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-3"
+                      >
+                        <input
+                          type="text"
+                          placeholder="Add a note about your mood (optional)..."
+                          value={moodNote}
+                          onChange={(e) => setMoodNote(e.target.value)}
+                          className="w-full p-2.5 sm:p-3 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
+                          maxLength={200}
+                        />
+                        <p className="text-white/40 text-[10px] sm:text-xs mt-1">
+                          {moodNote.length}/200 characters
+                        </p>
+                      </motion.div>
+                    )}
                   </div>
 
                   {/* Selected Items */}

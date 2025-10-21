@@ -18,6 +18,7 @@ import OverviewSection from '../components/dashboard/OverviewSection';
 import ActivitySection from '../components/dashboard/ActivitySection';
 import AuraScore from '../components/dashboard/AuraScore';
 import DailyHabits from '../components/dashboard/DailyHabits';
+import MoodSection from '../components/dashboard/MoodSection';
 import FloatingAIChatButton from '../components/FloatingAIChatButton';
 
 interface HealthProfile {
@@ -44,7 +45,7 @@ interface User {
   profileCompleted?: boolean;
 }
 
-type TabId = 'overview' | 'analytics' | 'goals' | 'meals' | 'coach' | 'activity' | 'habits' | 'aura' | 'haircare' | 'skincare';
+type TabId = 'overview' | 'analytics' | 'goals' | 'meals' | 'mood' | 'coach' | 'activity' | 'habits' | 'aura' | 'haircare' | 'skincare';
 
 interface Tab {
   id: TabId;
@@ -105,6 +106,16 @@ const getTabs = (
       </svg>
     ),
     component: <MealTracking onMealAdded={onMealUpdate} />
+  },
+  {
+    id: 'mood',
+    label: 'Mood Insights',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    component: <MoodSection />
   },
   {
     id: 'coach',
