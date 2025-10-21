@@ -114,33 +114,50 @@ const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({
 
   // Get data based on time range
   const analyticsData = useMemo(() => {
-    if (meals.length === 0) return [];
-
-    const now = new Date();
-    const sortedMeals = [...meals].sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-
     if (timeRange === 'daily') {
-      // Last 7 days
-      return sortedMeals.slice(0, 7).reverse().map(day => {
-        const totals = calculateDayTotals(day);
-        return {
-          date: new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      // Last 7 days - show all days even if no data
+      const result = [];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      for (let i = 6; i >= 0; i--) {
+        const targetDate = new Date(today);
+        targetDate.setDate(today.getDate() - i);
+        
+        // Find meal data for this date
+        const dayMeal = meals.find(day => {
+          const mealDate = new Date(day.date);
+          mealDate.setHours(0, 0, 0, 0);
+          return mealDate.getTime() === targetDate.getTime();
+        });
+        
+        const totals = dayMeal ? calculateDayTotals(dayMeal) : 
+          { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+        
+        result.push({
+          date: targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           ...totals
-        };
-      });
+        });
+      }
+      
+      return result;
     } else if (timeRange === 'weekly') {
       // Last 4 weeks
       const weeks: any[] = [];
+      const now = new Date();
+      
       for (let i = 0; i < 4; i++) {
         const weekEnd = new Date(now);
         weekEnd.setDate(now.getDate() - (i * 7));
+        weekEnd.setHours(0, 0, 0, 0);
+        
         const weekStart = new Date(weekEnd);
         weekStart.setDate(weekEnd.getDate() - 6);
+        weekStart.setHours(0, 0, 0, 0);
 
-        const weekMeals = sortedMeals.filter(day => {
+        const weekMeals = meals.filter(day => {
           const dayDate = new Date(day.date);
+          dayDate.setHours(0, 0, 0, 0);
           return dayDate >= weekStart && dayDate <= weekEnd;
         });
 
@@ -152,24 +169,28 @@ const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({
           });
         });
 
+        // Average over actual days with data, not all 7 days
+        const daysWithData = weekMeals.length || 1;
         weeks.unshift({
           date: `Week ${4 - i}`,
-          calories: Math.round(weekTotals.calories / 7),
-          protein: Math.round(weekTotals.protein / 7),
-          carbs: Math.round(weekTotals.carbs / 7),
-          fat: Math.round(weekTotals.fat / 7),
-          fiber: Math.round(weekTotals.fiber / 7)
+          calories: Math.round(weekTotals.calories / daysWithData),
+          protein: Math.round(weekTotals.protein / daysWithData),
+          carbs: Math.round(weekTotals.carbs / daysWithData),
+          fat: Math.round(weekTotals.fat / daysWithData),
+          fiber: Math.round(weekTotals.fiber / daysWithData)
         });
       }
       return weeks;
     } else {
       // Last 6 months
       const months: any[] = [];
+      const now = new Date();
+      
       for (let i = 0; i < 6; i++) {
         const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const monthName = monthDate.toLocaleDateString('en-US', { month: 'short' });
         
-        const monthMeals = sortedMeals.filter(day => {
+        const monthMeals = meals.filter(day => {
           const dayDate = new Date(day.date);
           return dayDate.getMonth() === monthDate.getMonth() && 
                  dayDate.getFullYear() === monthDate.getFullYear();
@@ -183,6 +204,7 @@ const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({
           });
         });
 
+        // Average over actual days with data
         const daysInMonth = monthMeals.length || 1;
         months.unshift({
           date: monthName,
