@@ -63,32 +63,40 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
 
   useEffect(() => {
     console.log('📊 OverviewSection mounted/re-mounted, fetching data...');
-    fetchData();
-    fetchActivityData();
+    // Small delay to ensure any pending DB writes are complete
+    const timer = setTimeout(() => {
+      fetchData();
+      fetchActivityData();
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
-  const fetchData = async () => {
-    console.log('📊 OverviewSection: Starting fetchData...');
+  const fetchData = async (retryCount = 0) => {
+    console.log('📊 OverviewSection: Starting fetchData... (attempt:', retryCount + 1, ')');
     setLoading(true);
     try {
       // Fetch meals data to calculate actual consumed values
-      const mealsRes = await fetch('/api/profile/meals');
+      const mealsRes = await fetch('/api/profile/meals', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+
       if (mealsRes.ok) {
         const mealsData = await mealsRes.json();
         console.log('📊 Meals data received:', mealsData.meals?.length || 0, 'days');
-        
+
         // Calculate today's actual consumption from meals
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         const todayMeal = (mealsData.meals || []).find((day: any) => {
           const dayDate = new Date(day.date);
           dayDate.setHours(0, 0, 0, 0);
           return dayDate.getTime() === today.getTime();
         });
-        
+
         let actualConsumed = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
-        
+
         if (todayMeal) {
           ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
             const mealArray = todayMeal[mealType] || [];
@@ -101,15 +109,19 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
             });
           });
         }
-        
+
         console.log('📊 Today\'s actual consumption from meals:', actualConsumed);
-        
+
         // Fetch tracking data for goals
-        const trackingRes = await fetch('/api/tracking/daily');
+        const trackingRes = await fetch('/api/tracking/daily', {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+
         if (trackingRes.ok) {
           const trackingData = await trackingRes.json();
           console.log('📊 Tracking goals received:', trackingData.tracking);
-          
+
           // Merge actual consumed values with tracking goals
           setTracking({
             ...trackingData.tracking,
@@ -120,13 +132,40 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
           });
         } else {
           console.error('Failed to fetch tracking data:', trackingRes.status);
+          // Set default tracking if API fails
+          setTracking({
+            date: new Date(),
+            waterIntake: 0,
+            waterGoal: 8,
+            exerciseMinutes: 0,
+            exerciseGoal: 60,
+            caloriesConsumed: Math.round(actualConsumed.calories),
+            caloriesGoal: 2000,
+            proteinConsumed: Math.round(actualConsumed.protein),
+            proteinGoal: 150,
+            carbsConsumed: Math.round(actualConsumed.carbs),
+            carbsGoal: 250,
+            fatConsumed: Math.round(actualConsumed.fat),
+            fatGoal: 65,
+            completed: false
+          });
         }
       } else {
         console.error('Failed to fetch meals data:', mealsRes.status);
+        // Retry once if first attempt fails
+        if (retryCount < 2) {
+          console.log('📊 Retrying fetchData in 500ms...');
+          setTimeout(() => fetchData(retryCount + 1), 500);
+          return;
+        }
       }
 
       // Fetch goal
-      const goalRes = await fetch('/api/profile/goal');
+      const goalRes = await fetch('/api/profile/goal', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+
       if (goalRes.ok) {
         const goalData = await goalRes.json();
         console.log('🎯 Goal data received:', goalData.goal);
@@ -136,6 +175,12 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
       }
     } catch (error) {
       console.error('Failed to fetch overview data:', error);
+      // Retry on error
+      if (retryCount < 2) {
+        console.log('📊 Retrying fetchData after error in 500ms...');
+        setTimeout(() => fetchData(retryCount + 1), 500);
+        return;
+      }
     } finally {
       setLoading(false);
       console.log('📊 OverviewSection: fetchData complete');
@@ -263,7 +308,7 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
             Daily Targets {goal && goal.type && <span className="text-sm text-purple-400">({goal.type.replace('-', ' ')})</span>}
           </h3>
           <motion.button
-            onClick={fetchData}
+            onClick={() => fetchData()}
             whileHover={{ scale: 1.1, rotate: 180 }}
             whileTap={{ scale: 0.9 }}
             className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/30 text-white/70 hover:text-white transition-all"

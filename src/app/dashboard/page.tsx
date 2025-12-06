@@ -157,10 +157,14 @@ const Dashboard: React.FC = () => {
   const router = useRouter();
 
   const handleMealUpdate = () => {
-    // Force re-render of overview section and analytics when meals are added/removed
-    setOverviewKey(prev => prev + 1);
-    setAnalyticsKey(prev => prev + 1);
-    console.log('🔄 Triggering overview and analytics refresh');
+    // Add a small delay to ensure the database write completes before refreshing
+    // This prevents race conditions where the GET request happens before the POST completes
+    console.log('🔄 Meal update detected, waiting for DB write to complete...');
+    setTimeout(() => {
+      setOverviewKey(prev => prev + 1);
+      setAnalyticsKey(prev => prev + 1);
+      console.log('🔄 Triggering overview and analytics refresh');
+    }, 500); // 500ms delay to ensure DB write completes
   };
 
   useEffect(() => {
