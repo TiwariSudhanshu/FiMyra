@@ -3,6 +3,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import dynamic from "next/dynamic";
+
+// Dynamically import BarcodeScanner to avoid SSR issues with html5-qrcode
+const BarcodeScanner = dynamic(() => import("./BarcodeScanner"), { ssr: false });
 
 type MealItem = {
   name: string;
@@ -87,6 +91,9 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
   const [waterIntake, setWaterIntake] = useState(0);
   const [waterGoal, setWaterGoal] = useState(8);
   const [updatingWater, setUpdatingWater] = useState(false);
+
+  // Barcode scanner state
+  const [showScanner, setShowScanner] = useState(false);
 
   const MOOD_EMOJIS = [
     { emoji: "😀", label: "Happy" },
@@ -289,6 +296,28 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
     );
     setRecent(next);
     localStorage.setItem("fimyra:recentMeals", JSON.stringify(next));
+  };
+
+  const handleScannedProduct = (product: {
+    name: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber?: number;
+  }) => {
+    // Add scanned product to selected items
+    setSelected((prev) => [
+      ...prev,
+      {
+        name: product.name,
+        quantity: 100,
+        unit: "g",
+      },
+    ]);
+    // Store nutrition info for later use when adding meal
+    setQuery(product.name);
+    toast.success(`Added ${product.name} to selection`);
   };
 
   const addMeals = async (
@@ -797,17 +826,31 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
                 </div>
 
                 <div className="space-y-4 sm:space-y-6 max-h-[70vh] overflow-y-auto pr-1">
-                  {/* Search Input */}
+                  {/* Search Input with Barcode Scanner */}
                   <div>
                     <label className="block text-white/80 text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                       Search or Type Meal Name
                     </label>
-                    <input
-                      placeholder="E.g., Grilled chicken salad..."
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      className="w-full p-3 sm:p-4 rounded-lg sm:rounded-xl bg-white/5 border border-white/10 text-white text-sm sm:text-base placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        placeholder="E.g., Grilled chicken salad..."
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        className="flex-1 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-white/5 border border-white/10 text-white text-sm sm:text-base placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
+                      />
+                      <motion.button
+                        onClick={() => setShowScanner(true)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg sm:rounded-xl font-medium shadow-lg shadow-green-500/30 transition-all flex items-center gap-2"
+                        title="Scan food barcode"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
+                        <span className="hidden sm:inline">Scan</span>
+                      </motion.button>
+                    </div>
                   </div>
 
                   {/* Recent Items */}
@@ -1174,6 +1217,16 @@ const MealTracking: React.FC<MealTrackingProps> = ({ onMealAdded }) => {
               </motion.div>
             </div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Barcode Scanner Modal */}
+      <AnimatePresence>
+        {showScanner && (
+          <BarcodeScanner
+            onProductFound={handleScannedProduct}
+            onClose={() => setShowScanner(false)}
+          />
         )}
       </AnimatePresence>
     </div>

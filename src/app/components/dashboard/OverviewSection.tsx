@@ -32,7 +32,23 @@ interface Goal {
   startDate: Date;
 }
 
-type TabId = 'overview' | 'analytics' | 'goals' | 'meals' | 'coach' | 'activity' | 'haircare' | 'skincare';
+interface Activity {
+  _id?: string;
+  type: 'goal_complete' | 'target_achieved' | 'meal_logged' | 'exercise_completed' | 'streak' | 'milestone';
+  title: string;
+  description: string;
+  timestamp: Date;
+  icon: string;
+  read: boolean;
+}
+
+interface Streaks {
+  currentStreak: number;
+  longestStreak: number;
+  lastActivityDate: Date;
+}
+
+type TabId = 'overview' | 'analytics' | 'goals' | 'nutrition' | 'coach' | 'habits' | 'aura' | 'selfcare';
 
 interface OverviewSectionProps {
   onTabChange?: (tab: TabId) => void;
@@ -42,11 +58,13 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
   const [tracking, setTracking] = useState<DailyTracking | null>(null);
   const [goal, setGoal] = useState<Goal | null>(null);
   const [loading, setLoading] = useState(true);
-  const [meals, setMeals] = useState<any[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [streaks, setStreaks] = useState<Streaks | null>(null);
 
   useEffect(() => {
     console.log('📊 OverviewSection mounted/re-mounted, fetching data...');
     fetchData();
+    fetchActivityData();
   }, []);
 
   const fetchData = async () => {
@@ -58,7 +76,6 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
       if (mealsRes.ok) {
         const mealsData = await mealsRes.json();
         console.log('📊 Meals data received:', mealsData.meals?.length || 0, 'days');
-        setMeals(mealsData.meals || []);
         
         // Calculate today's actual consumption from meals
         const today = new Date();
@@ -123,6 +140,54 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
       setLoading(false);
       console.log('📊 OverviewSection: fetchData complete');
     }
+  };
+
+  const fetchActivityData = async () => {
+    try {
+      // Fetch activities
+      const activitiesRes = await fetch('/api/tracking/activities');
+      if (activitiesRes.ok) {
+        const data = await activitiesRes.json();
+        setActivities((data.activities || []).slice(0, 5)); // Only show latest 5
+      }
+
+      // Fetch profile for streaks
+      const profileRes = await fetch('/api/profile');
+      if (profileRes.ok) {
+        const data = await profileRes.json();
+        if (data.user?.streaks) {
+          setStreaks(data.user.streaks);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch activity data:', error);
+    }
+  };
+
+  const formatTimestamp = (timestamp: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - new Date(timestamp).getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return new Date(timestamp).toLocaleDateString();
+  };
+
+  const getActivityColor = (type: string) => {
+    const colors: Record<string, string> = {
+      goal_complete: 'from-green-500/10 to-emerald-500/10 border-green-400/20',
+      target_achieved: 'from-blue-500/10 to-purple-500/10 border-blue-400/20',
+      meal_logged: 'from-purple-500/10 to-pink-500/10 border-purple-400/20',
+      exercise_completed: 'from-yellow-500/10 to-orange-500/10 border-yellow-400/20',
+      streak: 'from-orange-500/10 to-red-500/10 border-orange-400/20',
+      milestone: 'from-pink-500/10 to-purple-500/10 border-pink-400/20'
+    };
+    return colors[type] || 'from-white/5 to-white/5 border-white/10';
   };
 
   const updateTracking = async (field: string, value: number) => {
@@ -463,7 +528,7 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
             </button>
 
             <button
-              onClick={() => onTabChange?.('meals')}
+              onClick={() => onTabChange?.('nutrition')}
               className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 border border-purple-400/20 hover:border-purple-400/40 text-white transition-all group"
             >
               <div className="flex items-center gap-3">
@@ -510,6 +575,72 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ onTabChange }) => {
               </div>
             </button>
           </div>
+        </motion.div>
+      </div>
+
+      {/* Activity & Streaks Section */}
+      <div className="grid lg:grid-cols-3 gap-6 mt-8">
+        {/* Streaks Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-400/20 rounded-2xl p-6"
+        >
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-14 h-14 bg-gradient-to-br from-orange-500/30 to-red-500/30 rounded-xl flex items-center justify-center text-3xl">
+              🔥
+            </div>
+            <div>
+              <p className="text-white/60 text-sm">Current Streak</p>
+              <p className="text-white text-3xl font-bold">{streaks?.currentStreak || 0} days</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-white/50">Longest: {streaks?.longestStreak || 0} days</span>
+            <span className="text-orange-400 font-medium">Keep it up!</span>
+          </div>
+        </motion.div>
+
+        {/* Recent Activity Feed */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="lg:col-span-2 bg-gradient-to-br from-black/60 via-gray-900/40 to-black/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10"
+        >
+          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <span className="text-2xl">📋</span>
+            Recent Activity
+          </h3>
+
+          {activities.length === 0 ? (
+            <div className="text-center py-6 text-white/50">
+              <span className="text-4xl mb-2 block">📭</span>
+              <p>No recent activities. Start tracking to see updates!</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activities.map((activity, index) => (
+                <motion.div
+                  key={activity._id || index}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={`flex items-center gap-4 p-3 rounded-xl border bg-gradient-to-r ${getActivityColor(activity.type)}`}
+                >
+                  <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-xl">{activity.icon}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-medium truncate">{activity.title}</p>
+                    <p className="text-white/60 text-sm truncate">{activity.description}</p>
+                  </div>
+                  <span className="text-white/40 text-xs flex-shrink-0">{formatTimestamp(activity.timestamp)}</span>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </motion.div>
       </div>
     </div>

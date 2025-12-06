@@ -7,18 +7,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import WelcomeSection from '../components/dashboard/WelcomeSection';
 import AnalyticsOverview from '../components/dashboard/AnalyticsOverview';
-import QuickStats from '../components/dashboard/QuickStats';
-import MealTracking from '../components/dashboard/MealTracking';
 import AIHealthCoach from '../components/dashboard/AIHealthCoach';
-import RecentActivity from '../components/dashboard/RecentActivity';
-import HairCare from '../components/dashboard/HairCare';
-import SkinCare from '../components/dashboard/SkinCare';
 import GoalsSection from '../components/dashboard/GoalsSection';
 import OverviewSection from '../components/dashboard/OverviewSection';
-import ActivitySection from '../components/dashboard/ActivitySection';
 import AuraScore from '../components/dashboard/AuraScore';
 import DailyHabits from '../components/dashboard/DailyHabits';
-import MoodSection from '../components/dashboard/MoodSection';
+import NutritionSection from '../components/dashboard/NutritionSection';
+import SelfCareSection from '../components/dashboard/SelfCareSection';
 import FloatingAIChatButton from '../components/FloatingAIChatButton';
 
 interface HealthProfile {
@@ -45,7 +40,8 @@ interface User {
   profileCompleted?: boolean;
 }
 
-type TabId = 'overview' | 'analytics' | 'goals' | 'meals' | 'mood' | 'coach' | 'activity' | 'habits' | 'aura' | 'haircare' | 'skincare';
+// Consolidated tabs: 7 tabs instead of 11
+type TabId = 'overview' | 'analytics' | 'goals' | 'nutrition' | 'coach' | 'habits' | 'aura' | 'selfcare';
 
 interface Tab {
   id: TabId;
@@ -55,7 +51,7 @@ interface Tab {
 }
 
 const getTabs = (
-  user: User | null, 
+  user: User | null,
   onTabChange: (tab: TabId) => void,
   overviewKey: number,
   onMealUpdate: () => void,
@@ -98,24 +94,14 @@ const getTabs = (
     component: <GoalsSection />
   },
   {
-    id: 'meals',
-    label: 'Meal Tracking',
+    id: 'nutrition',
+    label: 'Nutrition',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
       </svg>
     ),
-    component: <MealTracking onMealAdded={onMealUpdate} />
-  },
-  {
-    id: 'mood',
-    label: 'Mood Insights',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    component: <MoodSection />
+    component: <NutritionSection onMealAdded={onMealUpdate} />
   },
   {
     id: 'coach',
@@ -126,16 +112,6 @@ const getTabs = (
       </svg>
     ),
     component: user ? <AIHealthCoach userName={user.name} /> : null
-  },
-  {
-    id: 'activity',
-    label: 'Activity',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    component: <ActivitySection />
   },
   {
     id: 'habits',
@@ -158,24 +134,14 @@ const getTabs = (
     component: <AuraScore />
   },
   {
-    id: 'haircare',
-    label: 'Hair Care',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-      </svg>
-    ),
-    component: <HairCare />
-  },
-  {
-    id: 'skincare',
-    label: 'Skin Care',
+    id: 'selfcare',
+    label: 'Self Care',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
       </svg>
     ),
-    component: <SkinCare />
+    component: <SelfCareSection />
   }
 ];
 
