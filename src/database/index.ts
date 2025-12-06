@@ -1,19 +1,32 @@
 import mongoose from 'mongoose';
 
-// Track connection status
-let isConnected = false;
+// Global cache for mongoose connection (for serverless environments)
+declare global {
+  // eslint-disable-next-line no-var
+  var mongooseConnection: {
+    conn: typeof mongoose | null;
+    promise: Promise<typeof mongoose> | null;
+  } | undefined;
+}
+
+// Initialize cached connection
+const cached = global.mongooseConnection || { conn: null, promise: null };
+
+if (!global.mongooseConnection) {
+  global.mongooseConnection = cached;
+}
 
 /**
  * Connects to MongoDB database
  * Uses connection pooling and handles reconnection automatically
+ * Optimized for serverless environments (Vercel)
  */
 export const connectDB = async (): Promise<void> => {
   // Set mongoose options
   mongoose.set('strictQuery', true);
 
   // If already connected, return early
-  if (isConnected) {
-    console.log('✅ MongoDB is already connected');
+  if (cached.conn && mongoose.connection.readyState === 1) {
     return;
   }
 
@@ -26,32 +39,25 @@ export const connectDB = async (): Promise<void> => {
     );
   }
 
-  try {
-    console.log('🔄 Connecting to MongoDB...');
+  // If no existing promise, create new connection
+  if (!cached.promise) {
+    const opts = {
+      dbName: 'fimyra',
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      bufferCommands: false, // Disable buffering for serverless
+    };
 
-    // Connect to MongoDB with optimized options
-    const connection = await mongoose.connect(MONGODB_URI, {
-      dbName: 'fimyra', // Database name
-      maxPoolSize: 10, // Maintain up to 10 socket connections
-      serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-      socketTimeoutMS: 45000, // Close connections after 45 seconds of inactivity
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
+      return mongooseInstance;
     });
+  }
 
-    isConnected = connection.connections[0].readyState === 1;
-
-    if (isConnected) {
-      console.log('✅ MongoDB connected successfully');
-      console.log(`📊 Database: ${connection.connections[0].name}`);
-      console.log(`🌐 Host: ${connection.connections[0].host}:${connection.connections[0].port}`);
-    }
-
+  try {
+    cached.conn = await cached.promise;
   } catch (error) {
-    console.error('❌ MongoDB connection failed:', error);
-    
-    // Reset connection status on error
-    isConnected = false;
-    
-    // Re-throw error to be handled by the caller
+    cached.promise = null;
     throw new Error(`Failed to connect to MongoDB: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
@@ -61,17 +67,16 @@ export const connectDB = async (): Promise<void> => {
  * Useful for cleanup in serverless functions or testing
  */
 export const disconnectDB = async (): Promise<void> => {
-  if (!isConnected) {
-    console.log('⚠️ MongoDB is not connected');
+  if (!cached.conn) {
     return;
   }
 
   try {
     await mongoose.disconnect();
-    isConnected = false;
-    console.log('✅ MongoDB disconnected successfully');
+    cached.conn = null;
+    cached.promise = null;
   } catch (error) {
-    console.error('❌ Error disconnecting from MongoDB:', error);
+    console.error('Error disconnecting from MongoDB:', error);
     throw error;
   }
 };
@@ -80,37 +85,7 @@ export const disconnectDB = async (): Promise<void> => {
  * Get current connection status
  */
 export const getConnectionStatus = (): boolean => {
-  return isConnected && mongoose.connection.readyState === 1;
+  return mongoose.connection.readyState === 1;
 };
-
-/**
- * Handle connection events
- */
-mongoose.connection.on('connected', () => {
-  console.log('🔗 Mongoose connected to MongoDB');
-  isConnected = true;
-});
-
-mongoose.connection.on('error', (error) => {
-  console.error('❌ Mongoose connection error:', error);
-  isConnected = false;
-});
-
-mongoose.connection.on('disconnected', () => {
-  console.log('🔌 Mongoose disconnected from MongoDB');
-  isConnected = false;
-});
-
-// Handle process termination
-process.on('SIGINT', async () => {
-  try {
-    await mongoose.connection.close();
-    console.log('🛑 Mongoose connection closed through app termination');
-    process.exit(0);
-  } catch (error) {
-    console.error('❌ Error during graceful shutdown:', error);
-    process.exit(1);
-  }
-});
 
 export default { connectDB, disconnectDB, getConnectionStatus };
